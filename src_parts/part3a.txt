@@ -1,13 +1,19 @@
             if getattr(self,"_android_activity",None):
                 self._android_activity.unbind(on_activity_result=self._on_open_result)
             if intent is None:return
-            parsed=parse_abt(self._read_android_uri(intent.getData()),self.app.data["modules"])
-            if not parsed:self.set_status("ABT строки не распознаны");return
+            raw_text=self._read_android_uri(intent.getData())
+            parsed=parse_abt(raw_text,self.app.data["modules"])
+            if not parsed:self.set_status("ABT файл не распознан");return
+            selected=self.current_module(); selected_id=selected.get("id"); selected_addr=str(selected.get("address","")).upper()
+            file_addrs={str(r.get("address","")).split("-",1)[0].upper() for r in parsed}
+            if file_addrs!={selected_addr}:
+                names=[m.get("id") for m in self.app.data["modules"] if str(m.get("address","")).upper() in file_addrs]
+                detected=", ".join(names) if names else ", ".join(sorted(file_addrs))
+                self.set_status(f"Ошибка: выбран {selected_id}, файл относится к {detected}");return
             existing={(r.get("module"),r.get("address")):r for r in self.app.data["rows"]}
             for r in parsed:
-                mid=module_for_address(r.get("address"),self.app.data["modules"]) or r.get("module")
-                r["module"]=mid
-                existing[(mid,r["address"])]=r
+                r["module"]=selected_id
+                existing[(selected_id,r["address"])]=r
             self.app.data["rows"]=list(existing.values()); self.changed={}; self.changed_positions={}; self.feature_active={}; self.row_feature_baselines={}; self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data["rows"]}
             self.app.save_settings(); self.refresh(); self.set_status(f"Открыто строк: {len(parsed)}")
         except Exception as e:self.set_status("Ошибка открытия: "+str(e))
