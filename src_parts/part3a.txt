@@ -4,7 +4,7 @@
             parsed=parse_abt(self._read_android_uri(intent.getData()),self.app.data["modules"])
             if not parsed:self.set_status("ABT строки не распознаны");return
             existing={(r.get("module"),r.get("address")):r for r in self.app.data["rows"]}
-            for r in parsed:existing[(r["module"],r["address"])]=r
+            for r in parsed:\n                mid=module_for_address(r.get("address"),self.app.data["modules"]) or r.get("module")\n                r["module"]=mid\n                existing[(mid,r["address"])]=r
             self.app.data["rows"]=list(existing.values()); self.changed={}; self.changed_positions={}; self.feature_active={}; self.row_feature_baselines={}; self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data["rows"]}
             self.app.save_settings(); self.refresh(); self.set_status(f"Открыто строк: {len(parsed)}")
         except Exception as e:self.set_status("Ошибка открытия: "+str(e))
