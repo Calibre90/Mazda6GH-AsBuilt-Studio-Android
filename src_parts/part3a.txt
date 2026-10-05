@@ -1,0 +1,31 @@
+            if getattr(self,"_android_activity",None):
+                self._android_activity.unbind(on_activity_result=self._on_open_result)
+            if intent is None:return
+            parsed=parse_abt(self._read_android_uri(intent.getData()),self.app.data["modules"])
+            if not parsed:self.set_status("ABT строки не распознаны");return
+            existing={(r.get("module"),r.get("address")):r for r in self.app.data["rows"]}
+            for r in parsed:existing[(r["module"],r["address"])]=r
+            self.app.data["rows"]=list(existing.values()); self.changed={}; self.changed_positions={}
+            self.app.save_settings(); self.refresh(); self.set_status(f"Открыто строк: {len(parsed)}")
+        except Exception as e:self.set_status("Ошибка открытия: "+str(e))
+    def _module_abt_bytes(self,m):
+        rows=[r for r in self.app.data["rows"] if r.get("module")==m["id"] and r.get("value","").strip()]
+        grouped={}
+        for r in rows:
+            mod,b,l=address_parts(r["address"]); grouped.setdefault(int(r.get("abt_block",b)),[]).append((l,r,mod,b))
+        lines=[]
+        for block in sorted(grouped):
+            lines.append(f";Block {block}")
+            for _,r,mod,b in sorted(grouped[block]):
+                recalc(r); _,_,l=address_parts(r["address"])
+                lines.append(f"{mod}{encode_abt_index(b)}{encode_abt_index(l)}{norm(r['value'])}")
+        return ("\r\n".join(lines)+"\r\n").encode("ascii")
+    def _on_save_result(self,requestCode,resultCode,intent):
+        if requestCode!=4102:return
+        try:
+            if getattr(self,"_android_activity",None):
+                self._android_activity.unbind(on_activity_result=self._on_save_result)
+            if intent is None:return
+            data=self._module_abt_bytes(self.pending_save_module or self.current_module())
+            self._write_android_uri(intent.getData(),data); self.set_status("ABT сохранён")
+        except Exception as e:self.set_status("Ошибка сохранения: "+str(e))
