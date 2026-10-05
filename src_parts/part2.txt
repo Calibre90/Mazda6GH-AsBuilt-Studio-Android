@@ -1,7 +1,7 @@
 class Main(BoxLayout):
     status=StringProperty("Готово")
     def __init__(self,**kw):
-        super().__init__(orientation="vertical",spacing=dp(3),padding=(dp(7),dp(28),dp(7),dp(7)),**kw); self.app=App.get_running_app(); self.changed={}; self.changed_positions={}; self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data.get("rows",[])}; self.tabs=None; self.pending_save_module=None; self.active_module_id=self.app.data.get("modules",[{"id":"IC"}])[0].get("id","IC"); self.feature_active={}; self.feature_baselines={}
+        super().__init__(orientation="vertical",spacing=dp(3),padding=(dp(7),dp(28),dp(7),dp(7)),**kw); self.app=App.get_running_app(); self.changed={}; self.changed_positions={}; self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data.get("rows",[])}; self.tabs=None; self.pending_save_module=None; self.active_module_id=self.app.data.get("modules",[{"id":"IC"}])[0].get("id","IC"); self.feature_active={}; self.feature_baselines={}; self.row_feature_baselines={}
         self.header=BoxLayout(size_hint_y=None,height=dp(42),spacing=dp(5)); self.title_label=Label(text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"),font_size="13sp",halign="right"); self.header.add_widget(self.title_label)
         ab=Button(text=self.app.data.get("ui",{}).get("admin_text","⚙"),size_hint_x=None,width=dp(52)); ab.bind(on_release=self.admin_login); self.header.add_widget(ab); self.add_widget(self.header)
         self.tabholder=BoxLayout(); self.add_widget(self.tabholder)
@@ -70,21 +70,42 @@ class Main(BoxLayout):
         self.active_module_id=f.get("module",self.active_module_id)
         r=next((x for x in self.app.data["rows"] if x.get("module")==f.get("module") and x.get("address")==f.get("row")),None)
         if not r:return
-        fid=f.get("id") or (str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label"))); before=norm(r["value"]); self.feature_baselines.setdefault(fid,before) if active else None; arr=list(before); mode=str(f.get("mode","HEX")).upper()
+        fid=f.get("id") or (str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label")))
+        rowkey=str(f.get("module"))+"|"+str(f.get("row"))
         try:
-            if mode=="BITS":
-                bi=int(f.get("byte_index",0)); bits=parse_indices(f.get("bits","")); old=int(before[bi*2:bi*2+2],16); new=old
-                for b in bits:new=(new|(1<<b)) if active else (new&~(1<<b))
-                hx=f"{new:02X}"; arr[bi*2:bi*2+2]=hx
+            if rowkey not in self.row_feature_baselines:self.row_feature_baselines[rowkey]=norm(r.get("value",""))
+            self.feature_active[fid]=bool(active)
+            baseline=self.row_feature_baselines[rowkey]
+            arr=list(baseline)
+            active_features=[]
+            for ff in self.app.data.get("features",[]):
+                ffid=ff.get("id") or (str(ff.get("module"))+"|"+str(ff.get("row"))+"|"+str(ff.get("label")))
+                if ff.get("module")==f.get("module") and ff.get("row")==f.get("row") and self.feature_active.get(ffid,False):active_features.append(ff)
+            for ff in active_features:
+                mode=str(ff.get("mode","HEX")).upper()
+                if mode=="BITS":
+                    bi=int(ff.get("byte_index",0)); bits=parse_indices(ff.get("bits",""))
+                    if bi*2+2>len(arr):raise ValueError(f"Byte {bi} вне строки {r.get('address')}")
+                    old=int("".join(arr[bi*2:bi*2+2]),16); new=old
+                    for b in bits:new|=(1<<b)
+                    arr[bi*2:bi*2+2]=list(f"{new:02X}")
+                else:
+                    idx=parse_indices(ff.get("hex_indices",0)); target=norm(ff.get("on",""))
+                    if len(target)!=len(idx):raise ValueError("количество HEX индексов не совпадает со значением")
+                    for n,i in enumerate(idx):
+                        if i>=len(arr):raise ValueError(f"HEX индекс {i} вне строки {r.get('address')}")
+                        arr[i]=target[n]
+            if active_features:
+                r["value"]=" ".join("".join(arr)[i:i+4] for i in range(0,len(arr),4)); recalc(r)
             else:
-                idx=parse_indices(f.get("hex_indices",0)); target=norm(f.get("on",""))
-                if len(target)!=len(idx): raise ValueError("количество HEX индексов не совпадает со значением")
-                for n,i in enumerate(idx):
-                    if i>=len(arr): raise ValueError(f"HEX индекс {i} вне строки {r.get('address')}")
-                    arr[i]=target[n]
-            if active: r["value"]=" ".join("".join(arr)[i:i+4] for i in range(0,len(arr),4)); recalc(r)
-            self.feature_active[fid]=bool(active); after=norm(r["value"]); diff={i for i,(a,b) in enumerate(zip(before,after)) if a!=b}; baseline=self.original_values.get(r["address"],before); final=norm(r["value"]); live={i for i in range(min(len(baseline),len(final))) if baseline[i]!=final[i]}; self.changed_positions[r["address"]]=live; self.changed[r["address"]]=bool(live); self.set_status(f'{f.get("label")}: изменено' if live else f'{f.get("label")}: исходное значение'); self.refresh()
-        except Exception as e:self.set_status("Ошибка параметра: "+str(e))
+                r["value"]=" ".join(baseline[i:i+4] for i in range(0,len(baseline),4))
+            final=norm(r["value"]); live={i for i in range(min(len(baseline),len(final))) if baseline[i]!=final[i]}
+            self.changed_positions[r["address"]]=live; self.changed[r["address"]]=bool(live)
+            self.set_status(f'{f.get("label")}: изменено' if live else f'{f.get("label")}: исходное значение')
+            self.refresh()
+        except Exception as e:
+            self.feature_active[fid]=not bool(active)
+            self.set_status("Ошибка параметра: "+str(e))
     def open_document(self,*_):
         if platform == "android":
             try:
