@@ -14,12 +14,75 @@
     def admin_panel(self):
         root=BoxLayout(orientation="vertical",spacing=dp(5),padding=dp(7))
         tabs=TabbedPanel(do_default_tab=False)
+        editors={}
+
+        def add_json_tab(title,key):
+            tab=TabbedPanelItem(text=title)
+            box=BoxLayout(orientation="vertical",spacing=dp(4))
+            hint=Label(text="Редактирование как в Windows V7.1. Изменения сохраняются в приложении.",size_hint_y=None,height=dp(32),font_size="11sp")
+            ed=TextInput(text=json.dumps(self.app.data.get(key,[]),ensure_ascii=False,indent=2),font_name="Roboto",font_size="12sp")
+            box.add_widget(hint); box.add_widget(ed); tab.add_widget(box); tabs.add_widget(tab); editors[key]=ed
+
         ui_tab=TabbedPanelItem(text="Оформление")
         sv=ScrollView(); form=GridLayout(cols=1,spacing=dp(5),size_hint_y=None)
         form.bind(minimum_height=form.setter("height")); ui=self.app.data.get("ui",{}); fields={}
-        items=[("title","Название приложения"),("author_text","Текст автора"),("link1_text","Текст ссылки 1"),("link1_url","URL ссылки 1"),("link2_text","Текст ссылки 2"),("link2_url","URL ссылки 2")]
+        items=[("title","Название приложения"),("author_text","Кто сделал программу"),("link1_text","Текст ссылки 1"),("link1_url","URL ссылки 1"),("link2_text","Текст ссылки 2"),("link2_url","URL ссылки 2"),("open_text","Кнопка открытия"),("save_text","Кнопка сохранения"),("ready_text","Строка состояния"),("feature_columns","Колонки функций")]
         for key,label in items:
             form.add_widget(Label(text=label,size_hint_y=None,height=dp(24)))
-            field=TextInput(text=ui.get(key,""),multiline=False,size_hint_y=None,height=dp(42))
-            fields[key]=field;form.add_widget(field)
-        sv.add_widget(form);ui_tab.add_widget(sv);tabs.add_widget(ui_tab)
+            field=TextInput(text=str(ui.get(key,"")),multiline=False,size_hint_y=None,height=dp(42))
+            fields[key]=field; form.add_widget(field)
+        sv.add_widget(form); ui_tab.add_widget(sv); tabs.add_widget(ui_tab)
+        add_json_tab("Функции","features")
+        add_json_tab("Строки","rows")
+        add_json_tab("Блоки","modules")
+
+        account=TabbedPanelItem(text="Доступ")
+        abox=BoxLayout(orientation="vertical",spacing=dp(6),padding=dp(8))
+        user=TextInput(text=self.app.data.get("username","admin"),hint_text="Логин",multiline=False,size_hint_y=None,height=dp(44))
+        pw=TextInput(hint_text="Новый пароль (пусто — не менять)",password=True,multiline=False,size_hint_y=None,height=dp(44))
+        abox.add_widget(Label(text="Учётные данные администратора",size_hint_y=None,height=dp(32)))
+        abox.add_widget(user); abox.add_widget(pw); abox.add_widget(Widget())
+        account.add_widget(abox); tabs.add_widget(account)
+
+        root.add_widget(tabs)
+        buttons=BoxLayout(size_hint_y=None,height=dp(50),spacing=dp(5))
+        save=Button(text="Сохранить всё"); close=Button(text="Закрыть")
+        buttons.add_widget(save); buttons.add_widget(close); root.add_widget(buttons)
+        pop=Popup(title="Админ-панель — Android / Windows V7.1",content=root,size_hint=(.99,.97)); close.bind(on_release=pop.dismiss)
+
+        def apply(*_):
+            try:
+                for k,t in fields.items():
+                    v=t.text.strip()
+                    if k=="feature_columns":
+                        v=max(1,int(v or "2"))
+                    self.app.data.setdefault("ui",{})[k]=v
+                for key,ed in editors.items():
+                    value=json.loads(ed.text)
+                    if not isinstance(value,list): raise ValueError(key+" должен быть JSON-массивом")
+                    self.app.data[key]=value
+                if not user.text.strip(): raise ValueError("Логин не может быть пустым")
+                self.app.data["username"]=user.text.strip()
+                if pw.text:self.app.data["password_hash"]=hashlib.sha256(pw.text.encode()).hexdigest()
+                self.app.save_settings(); self.refresh(); self.set_status("Настройки админ-панели сохранены")
+            except Exception as e:self.set_status("Ошибка настроек: "+str(e))
+        save.bind(on_release=apply); pop.open()
+
+class MazdaAndroidApp(App):
+    def build(self):
+        self.title="Mazda 6 GH As-Built Studio V2.4"
+        Window.softinput_mode="below_target"
+        self.db=Path(self.user_data_dir)/"settings.json"
+        self.data=self.load_settings()
+        return Main()
+    def load_settings(self):
+        try:
+            if self.db.exists():return json.loads(self.db.read_text(encoding="utf-8"))
+        except:pass
+        return json.loads(json.dumps(DEFAULT,ensure_ascii=False))
+    def save_settings(self):
+        self.db.parent.mkdir(parents=True,exist_ok=True)
+        self.db.write_text(json.dumps(self.data,ensure_ascii=False,indent=2),encoding="utf-8")
+
+if __name__=="__main__":
+    MazdaAndroidApp().run()
