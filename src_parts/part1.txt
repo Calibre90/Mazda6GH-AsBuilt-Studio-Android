@@ -21,7 +21,7 @@ from kivy.utils import platform
 from kivy.core.clipboard import Clipboard
 
 DEFAULT={
- "ui":{"title":"Mazda 6 GH As-Built Studio","author_text":"Кто сделал приложение","link1_text":"Ссылка 1","link1_url":"","link2_text":"Ссылка 2","link2_url":""},
+ "ui":{"title":"Mazda6GH-AsBuilt-Studio","background":"#f2f2f2","panel":"#fff7f2","width":590,"height":390,"feature_columns":2,"background_image":"","background_mode":"cover","open_text":"Open As-Built file","save_text":"Save As-Built file","admin_text":"⚙","author_text":"КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)","link1_text":"","link1_url":"","link2_text":"","link2_url":"","ready_text":"Готово"},
  "username":"admin","password_hash":hashlib.sha256("MazdaAdmin-ChangeMe-2026".encode()).hexdigest(),
  "modules":[{"id":"IC","name":"IC: Instrument Cluster","address":"720","version":"1"},{"id":"R_BCM","name":"R_BCM: Rear Body Control Module","address":"7B7","version":"1"},{"id":"SSU","name":"SSU: Start Stop Unit","address":"731","version":"1"}],
  "rows":[{"module":"IC","address":"720-01-01","value":"1F40 7126 809F","status":"Пример"},{"module":"IC","address":"720-01-02","value":"000E F255 E766","status":"Пример"},{"module":"IC","address":"720-01-03","value":"0F0E C236 CC0C","status":"Пример"},{"module":"R_BCM","address":"7B7-01-01","value":"85D0 0004 A1BA","status":"Пример"},{"module":"R_BCM","address":"7B7-01-02","value":"A501 C300 204A","status":"Пример"},{"module":"R_BCM","address":"7B7-01-03","value":"0018 5400 2E","status":"Пример"},{"module":"SSU","address":"731-01-01","value":"","status":"Заполнить из ABT"}],
