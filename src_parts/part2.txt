@@ -1,0 +1,105 @@
+class Main(BoxLayout):
+    status=StringProperty("Готово")
+    def __init__(self,**kw):
+        super().__init__(orientation="vertical",spacing=dp(5),padding=dp(7),**kw); self.app=App.get_running_app(); self.changed={}; self.changed_positions={}; self.tabs=None; self.pending_save_module=None
+        self.header=BoxLayout(size_hint_y=None,height=dp(52),spacing=dp(5)); self.title_label=Label(text=self.app.data.get("ui",{}).get("title","Mazda 6 GH As-Built Studio"),bold=True,font_size="18sp"); self.header.add_widget(self.title_label)
+        ab=Button(text="⚙",size_hint_x=None,width=dp(52)); ab.bind(on_release=self.admin_login); self.header.add_widget(ab); self.add_widget(self.header)
+        self.tabholder=BoxLayout(); self.add_widget(self.tabholder)
+        bar=BoxLayout(size_hint_y=None,height=dp(52),spacing=dp(5)); ob=Button(text="Открыть .ABT"); sb=Button(text="Сохранить блок"); ob.bind(on_release=self.open_document); sb.bind(on_release=self.save_document); bar.add_widget(ob);bar.add_widget(sb);self.add_widget(bar)
+        self.author_bar=BoxLayout(size_hint_y=None,height=dp(32),spacing=dp(4)); self.add_widget(self.author_bar)
+        self.stat=Label(text=self.status,size_hint_y=None,height=dp(28),font_size="12sp"); self.add_widget(self.stat); self.refresh()
+    def set_status(self,s): self.status=s; self.stat.text=s
+    def refresh_author(self):
+        self.author_bar.clear_widgets(); ui=self.app.data.get("ui",{}); self.author_bar.add_widget(Label(text=ui.get("author_text",""),font_size="11sp"))
+        for n in (1,2):
+            text=ui.get(f"link{n}_text",""); url=ui.get(f"link{n}_url","")
+            if text:
+                b=Button(text=text,font_size="11sp"); b.bind(on_release=lambda _b,u=url:self.open_url(u)); self.author_bar.add_widget(b)
+    def open_url(self,url):
+        if not url:return
+        try:
+            if platform=="android":
+                from jnius import autoclass
+                Intent=autoclass("android.content.Intent"); Uri=autoclass("android.net.Uri"); act=autoclass("org.kivy.android.PythonActivity").mActivity; act.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(url)))
+            else:
+                import webbrowser; webbrowser.open(url)
+        except Exception as e:self.set_status("Не удалось открыть ссылку: "+str(e))
+    def refresh(self):
+        self.title_label.text=self.app.data.get("ui",{}).get("title","Mazda 6 GH As-Built Studio"); self.refresh_author(); self.tabholder.clear_widgets(); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(42)); self.tabs=tabs
+        for m in self.app.data["modules"]:
+            ti=TabbedPanelItem(text=m["id"]); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(5),padding=dp(5)); content.bind(minimum_height=content.setter("height"))
+            content.add_widget(Label(text=f'[b]{m.get("name")}[/b]\nID: {m.get("address")}   Ver: {m.get("version","1")}',markup=True,size_hint_y=None,height=dp(52),halign="left"))
+            feats=[x for x in self.app.data["features"] if x.get("module")==m["id"]]
+            if feats: content.add_widget(Label(text="[b]ФУНКЦИИ[/b]",markup=True,size_hint_y=None,height=dp(28)))
+            for f in feats:
+                line=BoxLayout(size_hint_y=None,height=dp(48),spacing=dp(4)); cb=CheckBox(size_hint_x=None,width=dp(48)); cb.active=self.feature_state(f); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); line.add_widget(Label(text=f.get("label",""),halign="left")); content.add_widget(line)
+            content.add_widget(Label(text="[b]AS-BUILT / HEX[/b]",markup=True,size_hint_y=None,height=dp(30)))
+            for r in [x for x in self.app.data["rows"] if x.get("module")==m["id"]]:
+                raw=norm(r.get("value","")); pos=self.changed_positions.get(r["address"],set()); rendered=""
+                for i,ch in enumerate(raw): rendered += (f'[color=ff3333][b]{ch}[/b][/color]' if i in pos else ch); rendered += (" " if i%4==3 else "")
+                addr=f'[color=ff3333]{r["address"]}[/color]' if r["address"] in self.changed else r["address"]
+                txt=f'[b]{addr}[/b]   {rendered.strip()}'; content.add_widget(Label(text=txt,markup=True,size_hint_y=None,height=dp(38),font_name="RobotoMono",font_size="13sp"))
+            scroll.add_widget(content);ti.add_widget(scroll);tabs.add_widget(ti)
+        self.tabholder.add_widget(tabs)
+    def feature_state(self,f):
+        r=next((x for x in self.app.data["rows"] if x.get("module")==f.get("module") and x.get("address")==f.get("row")),None)
+        if not r:return False
+        raw=norm(r.get("value","")); mode=str(f.get("mode","HEX")).upper()
+        try:
+            if mode=="BITS":
+                bi=int(f.get("byte_index",0)); bits=parse_indices(f.get("bits","")); bv=int(raw[bi*2:bi*2+2],16); return bool(bits) and all(bv&(1<<b) for b in bits)
+            idx=parse_indices(f.get("hex_indices",0)); target=norm(f.get("on","")); return bool(idx) and len(idx)==len(target) and all(i<len(raw) and raw[i]==target[n] for n,i in enumerate(idx))
+        except:return False
+    def toggle(self,f,active):
+        r=next((x for x in self.app.data["rows"] if x.get("module")==f.get("module") and x.get("address")==f.get("row")),None)
+        if not r:return
+        before=norm(r["value"]); arr=list(before); mode=str(f.get("mode","HEX")).upper()
+        try:
+            if mode=="BITS":
+                bi=int(f.get("byte_index",0)); bits=parse_indices(f.get("bits","")); old=int(before[bi*2:bi*2+2],16); new=old
+                for b in bits:new=(new|(1<<b)) if active else (new&~(1<<b))
+                hx=f"{new:02X}"; arr[bi*2:bi*2+2]=hx
+            else:
+                idx=parse_indices(f.get("hex_indices",0)); target=norm(f.get("on") if active else f.get("off",""))
+                if len(target)!=len(idx): raise ValueError("количество HEX индексов не совпадает со значением")
+                for n,i in enumerate(idx): arr[i]=target[n]
+            r["value"]=" ".join("".join(arr)[i:i+4] for i in range(0,len(arr),4)); recalc(r); after=norm(r["value"]); diff={i for i,(a,b) in enumerate(zip(before,after)) if a!=b}; self.changed_positions.setdefault(r["address"],set()).update(diff); self.changed[r["address"]]=True; self.app.save_settings(); self.set_status(f'{f.get("label")}: изменено'); self.refresh()
+        except Exception as e:self.set_status("Ошибка параметра: "+str(e))
+    def open_document(self,*_):
+        if platform == "android":
+            try:
+                from android import activity
+                from jnius import autoclass
+                Intent=autoclass("android.content.Intent"); self._android_activity=activity; activity.bind(on_activity_result=self._on_open_result); intent=Intent(Intent.ACTION_OPEN_DOCUMENT); intent.addCategory(Intent.CATEGORY_OPENABLE); intent.setType("*/*"); autoclass("org.kivy.android.PythonActivity").mActivity.startActivityForResult(intent,4101); self.set_status("Выберите .abt файл")
+            except Exception as e:self.set_status("Android picker: "+str(e))
+        else:self.open_picker()
+    def save_document(self,*_):
+        if platform == "android":
+            try:
+                from android import activity
+                from jnius import autoclass
+                Intent=autoclass("android.content.Intent"); self._android_activity=activity; activity.bind(on_activity_result=self._on_save_result); self.pending_save_module=self.current_module(); intent=Intent(Intent.ACTION_CREATE_DOCUMENT); intent.addCategory(Intent.CATEGORY_OPENABLE); intent.setType("application/octet-stream"); intent.putExtra(Intent.EXTRA_TITLE,self.pending_save_module["id"]+".abt"); autoclass("org.kivy.android.PythonActivity").mActivity.startActivityForResult(intent,4102); self.set_status("Выберите место сохранения")
+            except Exception as e:self.set_status("Android save picker: "+str(e))
+        else:self.save_picker()
+    def _read_android_uri(self,uri):
+        from jnius import autoclass
+        act=autoclass("org.kivy.android.PythonActivity").mActivity; stream=act.getContentResolver().openInputStream(uri); ByteArrayOutputStream=autoclass("java.io.ByteArrayOutputStream"); out=ByteArrayOutputStream(); buf=autoclass("java.lang.reflect.Array").newInstance(autoclass("java.lang.Byte").TYPE,8192)
+        while True:
+            n=stream.read(buf)
+            if n<=0:break
+            out.write(buf,0,n)
+        stream.close(); data=bytes((int(x)&255) for x in out.toByteArray()); out.close(); return data.decode("utf-8-sig",errors="replace")
+    def _write_android_uri(self,uri,data):
+        from jnius import autoclass
+        act=autoclass("org.kivy.android.PythonActivity").mActivity
+        stream=act.getContentResolver().openOutputStream(uri,"w")
+        try:
+            ByteBuffer=autoclass("java.nio.ByteBuffer")
+            jbytes=ByteBuffer.wrap(data).array()
+            stream.write(jbytes)
+            stream.flush()
+        finally:
+            stream.close()
+    def _on_open_result(self,requestCode,resultCode,intent):
+        if requestCode!=4101:return
+        try:
