@@ -1,7 +1,7 @@
         ft=TabbedPanelItem(text="Функции")
         fb=BoxLayout(orientation="vertical",spacing=dp(5))
         selector=Spinner(text=(self.app.data["features"][0]["label"] if self.app.data["features"] else "Нет функций"),values=[x["label"] for x in self.app.data["features"]],size_hint_y=None,height=dp(44))
-        fb.add_widget(selector); editor=TextInput(font_name="RobotoMono");fb.add_widget(editor)
+        fb.add_widget(selector); editor=TextInput(font_name="Roboto");fb.add_widget(editor)
         def load_feature(*_):
             f=next((x for x in self.app.data["features"] if x["label"]==selector.text),{})
             editor.text=json.dumps(f,ensure_ascii=False,indent=2)
