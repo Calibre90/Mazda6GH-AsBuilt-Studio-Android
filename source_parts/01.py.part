@@ -1,0 +1,100 @@
+        self.title_label.text=self.app.data.get("ui",{}).get("title","Mazda 6 GH As-Built Studio"); self.refresh_author(); self.tabholder.clear_widgets(); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(42)); self.tabs=tabs
+        for m in self.app.data["modules"]:
+            ti=TabbedPanelItem(text=m["id"]); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(5),padding=dp(5)); content.bind(minimum_height=content.setter("height"))
+            content.add_widget(Label(text=f'[b]{m.get("name")}[/b]\nID: {m.get("address")}   Ver: {m.get("version","1")}',markup=True,size_hint_y=None,height=dp(52),halign="left"))
+            feats=[x for x in self.app.data["features"] if x.get("module")==m["id"]]
+            if feats: content.add_widget(Label(text="[b]ФУНКЦИИ[/b]",markup=True,size_hint_y=None,height=dp(28)))
+            for f in feats:
+                line=BoxLayout(size_hint_y=None,height=dp(48),spacing=dp(4)); cb=CheckBox(size_hint_x=None,width=dp(48)); cb.active=self.feature_state(f); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); line.add_widget(Label(text=f.get("label",""),halign="left")); content.add_widget(line)
+            content.add_widget(Label(text="[b]AS-BUILT / HEX[/b]",markup=True,size_hint_y=None,height=dp(30)))
+            for r in [x for x in self.app.data["rows"] if x.get("module")==m["id"]]:
+                raw=norm(r.get("value","")); pos=self.changed_positions.get(r["address"],set()); rendered=""
+                for i,ch in enumerate(raw): rendered += (f'[color=ff3333][b]{ch}[/b][/color]' if i in pos else ch); rendered += (" " if i%4==3 else "")
+                addr=f'[color=ff3333]{r["address"]}[/color]' if r["address"] in self.changed else r["address"]
+                txt=f'[b]{addr}[/b]   {rendered.strip()}'; content.add_widget(Label(text=txt,markup=True,size_hint_y=None,height=dp(38),font_name="RobotoMono",font_size="13sp"))
+            scroll.add_widget(content);ti.add_widget(scroll);tabs.add_widget(ti)
+        self.tabholder.add_widget(tabs)
+    def feature_state(self,f):
+        r=next((x for x in self.app.data["rows"] if x.get("module")==f.get("module") and x.get("address")==f.get("row")),None)
+        if not r:return False
+        raw=norm(r.get("value","")); mode=str(f.get("mode","HEX")).upper()
+        try:
+            if mode=="BITS":
+                bi=int(f.get("byte_index",0)); bits=parse_indices(f.get("bits","")); bv=int(raw[bi*2:bi*2+2],16); return bool(bits) and all(bv&(1<<b) for b in bits)
+            idx=parse_indices(f.get("hex_indices",0)); target=norm(f.get("on","")); return bool(idx) and len(idx)==len(target) and all(i<len(raw) and raw[i]==target[n] for n,i in enumerate(idx))
+        except:return False
+    def toggle(self,f,active):
+        r=next((x for x in self.app.data["rows"] if x.get("module")==f.get("module") and x.get("address")==f.get("row")),None)
+        if not r:return
+        before=norm(r["value"]); arr=list(before); mode=str(f.get("mode","HEX")).upper()
+        try:
+            if mode=="BITS":
+                bi=int(f.get("byte_index",0)); bits=parse_indices(f.get("bits","")); old=int(before[bi*2:bi*2+2],16); new=old
+                for b in bits:new=(new|(1<<b)) if active else (new&~(1<<b))
+                hx=f"{new:02X}"; arr[bi*2:bi*2+2]=hx
+            else:
+                idx=parse_indices(f.get("hex_indices",0)); target=norm(f.get("on") if active else f.get("off",""))
+                if len(target)!=len(idx): raise ValueError("количество HEX индексов не совпадает со значением")
+                for n,i in enumerate(idx): arr[i]=target[n]
+            r["value"]=" ".join("".join(arr)[i:i+4] for i in range(0,len(arr),4)); recalc(r); after=norm(r["value"]); diff={i for i,(a,b) in enumerate(zip(before,after)) if a!=b}; self.changed_positions.setdefault(r["address"],set()).update(diff); self.changed[r["address"]]=True; self.app.save_settings(); self.set_status(f'{f.get("label")}: изменено'); self.refresh()
+        except Exception as e:self.set_status("Ошибка параметра: "+str(e))
+    def open_document(self,*_):
+        if platform == "android":
+            try:
+                from android import activity
+                from jnius import autoclass
+                Intent=autoclass("android.content.Intent"); self._android_activity=activity; activity.bind(on_activity_result=self._on_open_result); intent=Intent(Intent.ACTION_OPEN_DOCUMENT); intent.addCategory(Intent.CATEGORY_OPENABLE); intent.setType("*/*"); autoclass("org.kivy.android.PythonActivity").mActivity.startActivityForResult(intent,4101); self.set_status("Выберите .abt файл")
+            except Exception as e:self.set_status("Android picker: "+str(e))
+        else:self.open_picker()
+    def save_document(self,*_):
+        if platform == "android":
+            try:
+                from android import activity
+                from jnius import autoclass
+                Intent=autoclass("android.content.Intent"); self._android_activity=activity; activity.bind(on_activity_result=self._on_save_result); self.pending_save_module=self.current_module(); intent=Intent(Intent.ACTION_CREATE_DOCUMENT); intent.addCategory(Intent.CATEGORY_OPENABLE); intent.setType("application/octet-stream"); intent.putExtra(Intent.EXTRA_TITLE,self.pending_save_module["id"]+".abt"); autoclass("org.kivy.android.PythonActivity").mActivity.startActivityForResult(intent,4102); self.set_status("Выберите место сохранения")
+            except Exception as e:self.set_status("Android save picker: "+str(e))
+        else:self.save_picker()
+    def _read_android_uri(self,uri):
+        from jnius import autoclass
+        act=autoclass("org.kivy.android.PythonActivity").mActivity; stream=act.getContentResolver().openInputStream(uri); ByteArrayOutputStream=autoclass("java.io.ByteArrayOutputStream"); out=ByteArrayOutputStream(); buf=autoclass("java.lang.reflect.Array").newInstance(autoclass("java.lang.Byte").TYPE,8192)
+        while True:
+            n=stream.read(buf)
+            if n<=0:break
+            out.write(buf,0,n)
+        stream.close(); data=bytes((int(x)&255) for x in out.toByteArray()); out.close(); return data.decode("utf-8-sig",errors="replace")
+    def _write_android_uri(self,uri,data):
+        from jnius import autoclass
+        from jnius import cast
+        act=autoclass("org.kivy.android.PythonActivity").mActivity
+        stream=act.getContentResolver().openOutputStream(uri,"w")
+        try:
+            # OutputStream.write(byte[]) expects a Java byte array on Android.
+            ByteBuffer=autoclass("java.nio.ByteBuffer")
+            jbytes=ByteBuffer.wrap(data).array()
+            stream.write(jbytes)
+            stream.flush()
+        finally:
+            stream.close()
+    def _on_open_result(self,requestCode,resultCode,intent):
+        if requestCode!=4101:return
+        try:
+            if getattr(self,"_android_activity",None):
+                self._android_activity.unbind(on_activity_result=self._on_open_result)
+            if intent is None:return
+            parsed=parse_abt(self._read_android_uri(intent.getData()),self.app.data["modules"])
+            if not parsed:self.set_status("ABT строки не распознаны");return
+            existing={(r.get("module"),r.get("address")):r for r in self.app.data["rows"]}
+            for r in parsed:existing[(r["module"],r["address"])]=r
+            self.app.data["rows"]=list(existing.values()); self.changed={}; self.changed_positions={}; self.app.save_settings(); self.refresh(); self.set_status(f"Открыто строк: {len(parsed)}")
+        except Exception as e:self.set_status("Ошибка открытия: "+str(e))
+    def _module_abt_bytes(self,m):
+        rows=[r for r in self.app.data["rows"] if r.get("module")==m["id"] and r.get("value","").strip()]; grouped={}
+        for r in rows:
+            mod,b,l=address_parts(r["address"]); grouped.setdefault(int(r.get("abt_block",b)),[]).append((l,r,mod,b))
+        lines=[]
+        for block in sorted(grouped):
+            lines.append(f";Block {block}")
+            for _,r,mod,b in sorted(grouped[block]): recalc(r); _,_,l=address_parts(r["address"]); lines.append(f"{mod}{encode_abt_index(b)}{encode_abt_index(l)}{norm(r['value'])}")
+        return ("\r\n".join(lines)+"\r\n").encode("ascii")
+    def _on_save_result(self,requestCode,resultCode,intent):
+        if requestCode!=4102:return
