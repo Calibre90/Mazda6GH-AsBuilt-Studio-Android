@@ -63,13 +63,16 @@ def parse_abt(text,modules):
         bm=re.match(r"^;[ ]*Block[ ]+([0-9]+)",line,re.I)
         if bm: current=int(bm.group(1)); continue
         if not line or line.startswith((";","#","//")): continue
-        m=re.match(r"^([0-9A-Fa-f]{3})([0-9A-Za-z]{2})([0-9A-Za-z]{2})([0-9A-Fa-f]+)$",line) or re.match(r"^([0-9A-Fa-f]{3})[- ]([0-9A-Za-z]{2})[- ]([0-9A-Za-z]{2})[ ]+([0-9A-Fa-f][0-9A-Fa-f ]*)$",line)
+        clean=re.sub(r"[,:=\t]+"," ",line).strip()
+        m=(re.match(r"^([0-9A-Fa-f]{3})[- ]?([0-9A-Za-z]{2})[- ]?([0-9A-Za-z]{2})[ ]+([0-9A-Fa-f][0-9A-Fa-f ]*)$",clean)
+           or re.match(r"^([0-9A-Fa-f]{3})([0-9A-Za-z]{2})([0-9A-Za-z]{2})([0-9A-Fa-f]+)$",clean))
         if not m: continue
         try: bn=decode_abt_index(m.group(2)); ln=decode_abt_index(m.group(3))
         except: continue
         value=norm(m.group(4))
         if not value or len(value)%2: continue
-        parsed.append({"module":by_addr.get(m.group(1).upper(),"OTHER"),"address":f"{m.group(1).upper()}-{bn:02d}-{ln:02d}","value":" ".join(value[i:i+4] for i in range(0,len(value),4)),"status":"Импортировано из ABT","abt_block":current if current is not None else bn})
+        addr=f"{m.group(1).upper()}-{bn:02d}-{ln:02d}"
+        parsed.append({"module":by_addr.get(m.group(1).upper(),"OTHER"),"address":addr,"value":" ".join(value[i:i+4] for i in range(0,len(value),4)),"status":"Импортировано из ABT","abt_block":current if current is not None else bn})
     return parsed
 
 def module_for_address(addr,modules):
