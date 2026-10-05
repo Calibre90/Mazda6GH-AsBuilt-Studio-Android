@@ -12,54 +12,64 @@
             else:self.set_status("Неверный логин или пароль")
         b.bind(on_release=go);pop.open()
     def admin_panel(self):
-        root=BoxLayout(orientation="vertical",spacing=dp(4),padding=dp(6))
-        tabs=TabbedPanel(do_default_tab=False,tab_height=dp(42))
-        def table_tab(title,key,columns):
-            tab=TabbedPanelItem(text=title); box=BoxLayout(orientation="vertical",spacing=dp(4))
-            sv=ScrollView(); grid=GridLayout(cols=len(columns),spacing=dp(2),size_hint_y=None,row_default_height=dp(42),row_force_default=True)
-            grid.bind(minimum_height=grid.setter("height"))
-            for label,_ in columns: grid.add_widget(Label(text="[b]"+label+"[/b]",markup=True,font_size="11sp"))
-            rows=self.app.data.get(key,[])
-            def rebuild():
-                grid.clear_widgets()
-                for label,_ in columns:grid.add_widget(Label(text="[b]"+label+"[/b]",markup=True,font_size="11sp"))
-                for item in rows:
-                    for _,field in columns:
-                        ed=TextInput(text=str(item.get(field,"")),multiline=False,font_size="11sp")
-                        ed.bind(text=lambda w,v,obj=item,k=field:obj.__setitem__(k,v))
-                        grid.add_widget(ed)
-            rebuild(); sv.add_widget(grid); box.add_widget(sv)
-            actions=BoxLayout(size_hint_y=None,height=dp(48),spacing=dp(4))
-            add=Button(text="Добавить"); delete=Button(text="Удалить последнюю")
+        root=BoxLayout(orientation="vertical",spacing=dp(3),padding=dp(4))
+        tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36))
+        def editor_tab(title,key,fields):
+            tab=TabbedPanelItem(text=title,font_size="11sp"); outer=BoxLayout(orientation="vertical",spacing=dp(3))
+            selector=Spinner(text="Выберите запись",values=tuple(str(i+1)+" · "+str(x.get(fields[0][1],"")) for i,x in enumerate(self.app.data.get(key,[]))),size_hint_y=None,height=dp(38))
+            form=GridLayout(cols=2,spacing=dp(3),size_hint_y=None,row_default_height=dp(36),row_force_default=True); form.bind(minimum_height=form.setter("height")); edits={}
+            for label,k in fields:
+                form.add_widget(Label(text=label,font_size="11sp")); ed=TextInput(multiline=False,font_size="11sp",padding=(dp(4),dp(5))); edits[k]=ed; form.add_widget(ed)
+            sv=ScrollView();sv.add_widget(form);outer.add_widget(selector);outer.add_widget(sv)
+            def load(*_):
+                try:i=int(selector.text.split("·",1)[0].strip())-1
+                except:return
+                rows=self.app.data.get(key,[])
+                if 0<=i<len(rows):
+                    for k,ed in edits.items():ed.text=str(rows[i].get(k,""))
+            selector.bind(text=load)
+            acts=BoxLayout(size_hint_y=None,height=dp(40),spacing=dp(3)); add=Button(text="Добавить",font_size="11sp"); save=Button(text="Изменить",font_size="11sp"); delete=Button(text="Удалить",font_size="11sp")
+            def refresh_sel(index=None):
+                rows=self.app.data.get(key,[]); selector.values=tuple(str(i+1)+" · "+str(x.get(fields[0][1],"")) for i,x in enumerate(rows))
+                if rows:
+                    i=len(rows)-1 if index is None else max(0,min(index,len(rows)-1));selector.text=selector.values[i]
+                else:selector.text="Выберите запись"
             def addrow(*_):
-                rows.append({k:"" for _,k in columns}); rebuild()
+                self.app.data.setdefault(key,[]).append({k:"" for _,k in fields});refresh_sel()
+            def saverow(*_):
+                try:i=int(selector.text.split("·",1)[0].strip())-1
+                except:return
+                rows=self.app.data.get(key,[])
+                if 0<=i<len(rows):
+                    for k,ed in edits.items():rows[i][k]=ed.text.strip()
+                    refresh_sel(i);self.set_status("Запись изменена")
             def delrow(*_):
-                if rows: rows.pop(); rebuild()
-            add.bind(on_release=addrow); delete.bind(on_release=delrow); actions.add_widget(add); actions.add_widget(delete); box.add_widget(actions)
-            tab.add_widget(box); tabs.add_widget(tab)
-        table_tab("Функции и биты","features",[("Модуль","module"),("Надпись / функция","label"),("Строка","row"),("Режим","mode"),("HEX индексы / биты","hex_indices"),("ВКЛ","on"),("ВЫКЛ","off")])
-        table_tab("Строки As-Built","rows",[("Модуль","module"),("Строка","address"),("Значение","value")])
-        block=TabbedPanelItem(text="Блоки и доступ"); bb=BoxLayout(orientation="vertical",spacing=dp(5)); sv=ScrollView(); bg=GridLayout(cols=3,spacing=dp(2),size_hint_y=None,row_default_height=dp(42),row_force_default=True); bg.bind(minimum_height=bg.setter("height"))
-        for h in ("ID","Название","Адрес"):bg.add_widget(Label(text="[b]"+h+"[/b]",markup=True))
-        for m in self.app.data.get("modules",[]):
-            for k in ("id","name","address"):
-                ed=TextInput(text=str(m.get(k,"")),multiline=False); ed.bind(text=lambda w,v,obj=m,key=k:obj.__setitem__(key,v)); bg.add_widget(ed)
-        sv.add_widget(bg); bb.add_widget(sv); user=TextInput(text=self.app.data.get("username","admin"),hint_text="Логин администратора",multiline=False,size_hint_y=None,height=dp(42)); pw=TextInput(hint_text="Новый пароль (пусто — без изменений)",password=True,multiline=False,size_hint_y=None,height=dp(42)); bb.add_widget(user);bb.add_widget(pw);block.add_widget(bb);tabs.add_widget(block)
-        ui_tab=TabbedPanelItem(text="Оформление"); svu=ScrollView(); form=GridLayout(cols=2,spacing=dp(4),size_hint_y=None,row_default_height=dp(42),row_force_default=True);form.bind(minimum_height=form.setter("height"));fields={};ui=self.app.data.get("ui",{})
-        for key,label in [("title","Название окна"),("background","Фон приложения (#HEX)"),("background_image","Фоновая картинка"),("panel","Фон HEX-блока (#HEX)"),("feature_columns","Колонки функций"),("open_text","Кнопка открытия"),("save_text","Кнопка сохранения"),("admin_text","Кнопка админки"),("author_text","Текст возле Admin"),("ready_text","Текст статуса")]:
-            form.add_widget(Label(text=label,halign="left")); ed=TextInput(text=str(ui.get(key,"")),multiline=False);fields[key]=ed;form.add_widget(ed)
+                try:i=int(selector.text.split("·",1)[0].strip())-1
+                except:return
+                rows=self.app.data.get(key,[])
+                if 0<=i<len(rows):rows.pop(i);refresh_sel(max(0,i-1))
+            add.bind(on_release=addrow);save.bind(on_release=saverow);delete.bind(on_release=delrow)
+            for b in (add,save,delete):acts.add_widget(b)
+            outer.add_widget(acts);tab.add_widget(outer);tabs.add_widget(tab)
+        editor_tab("Функции и биты","features",[("Модуль","module"),("Надпись / функция","label"),("Строка","row"),("Режим HEX/BITS","mode"),("HEX индексы","hex_indices"),("Byte (BITS)","byte_index"),("Биты","bits"),("ВКЛ","on"),("ВЫКЛ","off")])
+        editor_tab("Строки As-Built","rows",[("Модуль","module"),("Строка","address"),("Значение","value")])
+        editor_tab("Блоки и доступ","modules",[("ID","id"),("Название","name"),("Адрес","address"),("Версия","version")])
+        ui_tab=TabbedPanelItem(text="Оформление",font_size="11sp");svu=ScrollView();form=GridLayout(cols=2,spacing=dp(3),size_hint_y=None,row_default_height=dp(36),row_force_default=True);form.bind(minimum_height=form.setter("height"));fields={};ui=self.app.data.get("ui",{})
+        for key,label in [("title","Название окна"),("background","Фон приложения"),("background_image","Фоновая картинка"),("panel","Фон HEX-блока"),("feature_columns","Колонки функций"),("open_text","Кнопка открытия"),("save_text","Кнопка сохранения"),("admin_text","Кнопка Admin"),("author_text","Текст возле Admin"),("ready_text","Текст статуса")]:
+            form.add_widget(Label(text=label,font_size="11sp"));ed=TextInput(text=str(ui.get(key,"")),multiline=False,font_size="11sp",padding=(dp(4),dp(5)));fields[key]=ed;form.add_widget(ed)
         svu.add_widget(form);ui_tab.add_widget(svu);tabs.add_widget(ui_tab);root.add_widget(tabs)
-        buttons=BoxLayout(size_hint_y=None,height=dp(50),spacing=dp(5));save=Button(text="Сохранить изменения");close=Button(text="Закрыть");buttons.add_widget(save);buttons.add_widget(close);root.add_widget(buttons)
-        pop=Popup(title="Администрирование интерфейса",content=root,size_hint=(.99,.94));close.bind(on_release=pop.dismiss)
+        account=BoxLayout(size_hint_y=None,height=dp(38),spacing=dp(3));user=TextInput(text=self.app.data.get("username","admin"),hint_text="Логин",multiline=False,font_size="11sp");pw=TextInput(hint_text="Новый пароль",password=True,multiline=False,font_size="11sp");account.add_widget(user);account.add_widget(pw);root.add_widget(account)
+        buttons=BoxLayout(size_hint_y=None,height=dp(44),spacing=dp(3));saveall=Button(text="Сохранить изменения",font_size="12sp");close=Button(text="Закрыть",font_size="12sp");buttons.add_widget(saveall);buttons.add_widget(close);root.add_widget(buttons)
+        pop=Popup(title="Администрирование интерфейса",content=root,size_hint=(.98,.90));close.bind(on_release=pop.dismiss)
         def apply(*_):
             try:
-                for k,e in fields.items():self.app.data.setdefault("ui",{})[k]=max(1,int(e.text or "2")) if k=="feature_columns" else e.text
+                for k,ed in fields.items():self.app.data.setdefault("ui",{})[k]=max(1,int(ed.text or "2")) if k=="feature_columns" else ed.text
                 if not user.text.strip():raise ValueError("Логин не может быть пустым")
                 self.app.data["username"]=user.text.strip()
                 if pw.text:self.app.data["password_hash"]=hashlib.sha256(pw.text.encode()).hexdigest()
                 self.app.save_settings();self.refresh();self.set_status("Настройки сохранены")
-            except Exception as e:self.set_status("Ошибка настроек: "+str(e))
-        save.bind(on_release=apply);pop.open()
+            except Exception as ex:self.set_status("Ошибка настроек: "+str(ex))
+        saveall.bind(on_release=apply);pop.open()
 
 class MazdaAndroidApp(App):
     def build(self):
