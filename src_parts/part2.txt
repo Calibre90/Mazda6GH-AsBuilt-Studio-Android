@@ -3,9 +3,9 @@ class Main(BoxLayout):
     def __init__(self,**kw):
         super().__init__(orientation="vertical",spacing=dp(5),padding=dp(7),**kw); self.app=App.get_running_app(); self.changed={}; self.changed_positions={}; self.tabs=None; self.pending_save_module=None
         self.header=BoxLayout(size_hint_y=None,height=dp(52),spacing=dp(5)); self.title_label=Label(text=self.app.data.get("ui",{}).get("title","Mazda 6 GH As-Built Studio"),bold=True,font_size="18sp"); self.header.add_widget(self.title_label)
-        ab=Button(text="⚙",size_hint_x=None,width=dp(52)); ab.bind(on_release=self.admin_login); self.header.add_widget(ab); self.add_widget(self.header)
+        ab=Button(text=self.app.data.get("ui",{}).get("admin_text","⚙"),size_hint_x=None,width=dp(52)); ab.bind(on_release=self.admin_login); self.header.add_widget(ab); self.add_widget(self.header)
         self.tabholder=BoxLayout(); self.add_widget(self.tabholder)
-        bar=BoxLayout(size_hint_y=None,height=dp(52),spacing=dp(5)); ob=Button(text="Открыть .ABT"); sb=Button(text="Сохранить блок"); ob.bind(on_release=self.open_document); sb.bind(on_release=self.save_document); bar.add_widget(ob);bar.add_widget(sb);self.add_widget(bar)
+        bar=BoxLayout(size_hint_y=None,height=dp(52),spacing=dp(5)); ui=self.app.data.get("ui",{}); ob=Button(text=ui.get("open_text","Open As-Built file")); sb=Button(text=ui.get("save_text","Save As-Built file")); ob.bind(on_release=self.open_document); sb.bind(on_release=self.save_document); bar.add_widget(ob);bar.add_widget(sb);self.add_widget(bar)
         self.author_bar=BoxLayout(size_hint_y=None,height=dp(32),spacing=dp(4)); self.add_widget(self.author_bar)
         self.stat=Label(text=self.status,size_hint_y=None,height=dp(28),font_size="12sp"); self.add_widget(self.stat); self.refresh()
     def set_status(self,s): self.status=s; self.stat.text=s
@@ -30,10 +30,14 @@ class Main(BoxLayout):
             ti=TabbedPanelItem(text=m["id"]); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(5),padding=dp(5)); content.bind(minimum_height=content.setter("height"))
             content.add_widget(Label(text=f'[b]{m.get("name")}[/b]\nID: {m.get("address")}   Ver: {m.get("version","1")}',markup=True,size_hint_y=None,height=dp(52),halign="left"))
             feats=[x for x in self.app.data["features"] if x.get("module")==m["id"]]
-            if feats: content.add_widget(Label(text="[b]ФУНКЦИИ[/b]",markup=True,size_hint_y=None,height=dp(28)))
-            for f in feats:
-                line=BoxLayout(size_hint_y=None,height=dp(48),spacing=dp(4)); cb=CheckBox(size_hint_x=None,width=dp(48)); cb.active=self.feature_state(f); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); line.add_widget(Label(text=f.get("label",""),halign="left")); content.add_widget(line)
-            content.add_widget(Label(text="[b]AS-BUILT / HEX[/b]",markup=True,size_hint_y=None,height=dp(30)))
+            if feats:
+                cols=max(1,int(self.app.data.get("ui",{}).get("feature_columns",2)))
+                grid=GridLayout(cols=cols,size_hint_y=None,spacing=dp(2),row_default_height=dp(38),row_force_default=True)
+                grid.bind(minimum_height=grid.setter("height"))
+                for f in feats:
+                    line=BoxLayout(size_hint_y=None,height=dp(38),spacing=dp(2)); cb=CheckBox(size_hint_x=None,width=dp(38)); cb.active=self.feature_state(f); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); line.add_widget(Label(text=f.get("label",""),halign="left",font_size="12sp")); grid.add_widget(line)
+                content.add_widget(grid)
+            content.add_widget(Label(text="[b]AS-BUILT / HEX[/b]",markup=True,size_hint_y=None,height=dp(26)))
             for r in [x for x in self.app.data["rows"] if x.get("module")==m["id"]]:
                 raw=norm(r.get("value","")); pos=self.changed_positions.get(r["address"],set()); rendered=""
                 for i,ch in enumerate(raw): rendered += (f'[color=ff3333][b]{ch}[/b][/color]' if i in pos else ch); rendered += (" " if i%4==3 else "")
