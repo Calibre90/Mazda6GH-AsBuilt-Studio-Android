@@ -71,6 +71,9 @@
         pop=Popup(title="Администрирование интерфейса",content=root,size_hint=(.98,.90));close.bind(on_release=pop.dismiss)
         def apply(*_):
             try:
+                for commit in pending_commits:commit()
+                for f in self.app.data.get("features",[]):
+                    if not f.get("id"):f["id"]="custom_"+hashlib.sha1((str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label"))).encode()).hexdigest()[:10]
                 for k,ed in fields.items():self.app.data.setdefault("ui",{})[k]=max(1,int(ed.text or "2")) if k=="feature_columns" else ed.text
                 if not user.text.strip():raise ValueError("Логин не может быть пустым")
                 self.app.data["username"]=user.text.strip()
