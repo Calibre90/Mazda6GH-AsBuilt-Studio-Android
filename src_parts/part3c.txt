@@ -1,0 +1,25 @@
+    def admin_login(self,*_):
+        box=BoxLayout(orientation="vertical",spacing=dp(7),padding=dp(10))
+        u=TextInput(hint_text="Логин",multiline=False)
+        p=TextInput(hint_text="Пароль",password=True,multiline=False)
+        b=Button(text="Войти",size_hint_y=None,height=dp(48))
+        box.add_widget(u);box.add_widget(p);box.add_widget(b)
+        pop=Popup(title="Администратор",content=box,size_hint=(.9,.48))
+        def go(*_):
+            digest=hashlib.sha256(p.text.encode()).hexdigest()
+            if u.text==self.app.data["username"] and digest==self.app.data["password_hash"]:
+                pop.dismiss();self.admin_panel()
+            else:self.set_status("Неверный логин или пароль")
+        b.bind(on_release=go);pop.open()
+    def admin_panel(self):
+        root=BoxLayout(orientation="vertical",spacing=dp(5),padding=dp(7))
+        tabs=TabbedPanel(do_default_tab=False)
+        ui_tab=TabbedPanelItem(text="Оформление")
+        sv=ScrollView(); form=GridLayout(cols=1,spacing=dp(5),size_hint_y=None)
+        form.bind(minimum_height=form.setter("height")); ui=self.app.data.get("ui",{}); fields={}
+        items=[("title","Название приложения"),("author_text","Текст автора"),("link1_text","Текст ссылки 1"),("link1_url","URL ссылки 1"),("link2_text","Текст ссылки 2"),("link2_url","URL ссылки 2")]
+        for key,label in items:
+            form.add_widget(Label(text=label,size_hint_y=None,height=dp(24)))
+            field=TextInput(text=ui.get(key,""),multiline=False,size_hint_y=None,height=dp(42))
+            fields[key]=field;form.add_widget(field)
+        sv.add_widget(form);ui_tab.add_widget(sv);tabs.add_widget(ui_tab)
