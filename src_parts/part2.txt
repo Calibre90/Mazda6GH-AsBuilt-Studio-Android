@@ -2,7 +2,7 @@ class Main(BoxLayout):
     status=StringProperty("Готово")
     def __init__(self,**kw):
         super().__init__(orientation="vertical",spacing=dp(3),padding=(dp(7),dp(28),dp(7),dp(7)),**kw); self.app=App.get_running_app(); self.changed={}; self.changed_positions={}; self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data.get("rows",[])}; self.tabs=None; self.pending_save_module=None; self.active_module_id=self.app.data.get("modules",[{"id":"IC"}])[0].get("id","IC"); self.feature_active={}; self.feature_baselines={}; self.row_feature_baselines={}
-        self.header=BoxLayout(size_hint_y=None,height=dp(42),spacing=dp(5)); self.header_links=BoxLayout(size_hint_x=.42,spacing=dp(2)); self.header.add_widget(self.header_links); self.title_label=Label(text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"),font_size="13sp",halign="right"); self.header.add_widget(self.title_label)
+        self.header=BoxLayout(size_hint_y=None,height=dp(42),spacing=dp(5)); self.title_label=Label(text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"),font_size="13sp",halign="right"); self.header.add_widget(self.title_label)
         ab=Button(text=self.app.data.get("ui",{}).get("admin_text","⚙"),size_hint_x=None,width=dp(52)); ab.bind(on_release=self.admin_login); self.header.add_widget(ab); self.add_widget(self.header)
         self.tabholder=BoxLayout(); self.add_widget(self.tabholder)
         bar=BoxLayout(size_hint_y=None,height=dp(52),spacing=dp(5)); ui=self.app.data.get("ui",{}); ob=Button(text=ui.get("open_text","Open As-Built file")); sb=Button(text=ui.get("save_text","Save As-Built file")); ob.bind(on_release=self.open_document); sb.bind(on_release=self.save_document); bar.add_widget(ob);bar.add_widget(sb);self.add_widget(bar)
@@ -124,12 +124,18 @@ class Main(BoxLayout):
         else:self.save_picker()
     def _read_android_uri(self,uri):
         from jnius import autoclass
-        act=autoclass("org.kivy.android.PythonActivity").mActivity; stream=act.getContentResolver().openInputStream(uri); ByteArrayOutputStream=autoclass("java.io.ByteArrayOutputStream"); out=ByteArrayOutputStream(); buf=autoclass("java.lang.reflect.Array").newInstance(autoclass("java.lang.Byte").TYPE,8192)
-        while True:
-            n=stream.read(buf)
-            if n<=0:break
-            out.write(buf,0,n)
-        stream.close(); data=bytes((int(x)&255) for x in out.toByteArray()); out.close(); return data.decode("utf-8-sig",errors="replace")
+        act=autoclass("org.kivy.android.PythonActivity").mActivity
+        stream=act.getContentResolver().openInputStream(uri)
+        InputStreamReader=autoclass("java.io.InputStreamReader"); BufferedReader=autoclass("java.io.BufferedReader")
+        br=BufferedReader(InputStreamReader(stream,"UTF-8")); lines=[]
+        try:
+            while True:
+                line=br.readLine()
+                if line is None: break
+                lines.append(str(line))
+        finally:
+            br.close()
+        return "\n".join(lines)
     def _write_android_uri(self,uri,data):
         from jnius import autoclass
         act=autoclass("org.kivy.android.PythonActivity").mActivity
