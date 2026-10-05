@@ -22,7 +22,7 @@ from kivy.core.clipboard import Clipboard
 from kivy.graphics import Color, Rectangle
 
 DEFAULT={
- "ui":{"title":"Mazda6GH-AsBuilt-Studio","background":"#f2f2f2","panel":"#fff7f2","width":590,"height":390,"feature_columns":2,"background_image":"","background_mode":"cover","open_text":"Open As-Built file","save_text":"Save As-Built file","admin_text":"⚙","author_text":"КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)","link1_text":"","link1_url":"","link2_text":"","link2_url":"","ready_text":"Готово"},
+ "ui":{"title":"Mazda6GH-AsBuilt-Studio","background":"#f2f2f2","panel":"#fff7f2","width":590,"height":390,"feature_columns":2,"open_text":"Open As-Built file","save_text":"Save As-Built file","admin_text":"⚙","author_text":"КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)","link1_text":"","link1_url":"","link2_text":"","link2_url":"","ready_text":"Готово"},
  "username":"admin","password_hash":hashlib.sha256("MazdaAdmin-ChangeMe-2026".encode()).hexdigest(),
  "modules":[{"id":"IC","name":"IC: Instrument Cluster","address":"720","version":"Стандартная! или загрузите свои"},{"id":"BCM","name":"BCM: Body Control Module","address":"726","version":"Стандартная! или загрузите свои"},{"id":"RKE","name":"Keyless Module","address":"731","version":"Стандартная! или загрузите свои"},{"id":"ABS","name":"Anti-lock Braking System","address":"760","version":"Стандартная! или загрузите свои"}],
  "rows":[{"module":"IC","address":"720-01-01","value":"2B00 7126 806B","status":"Пример"},{"module":"IC","address":"720-01-02","value":"000E F255 E766","status":"Пример"},{"module":"IC","address":"720-01-03","value":"0F0E C236 CC0C","status":"Пример"},{"module":"IC","address":"720-01-04","value":"F0FD ECCC EEBF","status":"Пример"},{"module":"IC","address":"720-01-05","value":"A461 7C00 00AE","status":"Пример"},{"module":"IC","address":"720-01-06","value":"00A0 0102 10E1","status":"Пример"},{"module":"IC","address":"720-01-07","value":"0822 FF08 0868","status":"Пример"},{"module":"IC","address":"720-01-08","value":"5852 00DA","status":"Пример"},{"module":"IC","address":"720-02-01","value":"C834 385E","status":"Пример"},{"module":"BCM","address":"726-01-01","value":"","status":"Заполнить из ABT"},{"module":"BCM","address":"726-02-01","value":"","status":"Заполнить из ABT"},{"module":"RKE","address":"731-01-01","value":"8040 3830 F85A","status":"Пример"},{"module":"RKE","address":"731-01-02","value":"1651","status":"Пример"},{"module":"ABS","address":"760-01-01","value":"","status":"Заполнить из ABT"}],
@@ -71,6 +71,10 @@ def parse_abt(text,modules):
         if not value or len(value)%2: continue
         parsed.append({"module":by_addr.get(m.group(1).upper(),"OTHER"),"address":f"{m.group(1).upper()}-{bn:02d}-{ln:02d}","value":" ".join(value[i:i+4] for i in range(0,len(value),4)),"status":"Импортировано из ABT","abt_block":current if current is not None else bn})
     return parsed
+
+def module_for_address(addr,modules):
+    prefix=str(addr).split("-",1)[0].upper()
+    return next((m.get("id") for m in modules if str(m.get("address","")).upper()==prefix),None)
 
 class Main(BoxLayout):
     status=StringProperty("Готово")
