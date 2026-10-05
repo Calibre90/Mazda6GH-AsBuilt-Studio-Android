@@ -13,7 +13,7 @@
         b.bind(on_release=go);pop.open()
     def admin_panel(self):
         root=BoxLayout(orientation="vertical",spacing=dp(3),padding=dp(4))
-        tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36))
+        tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36))\n        pending_commits=[]
         def editor_tab(title,key,fields):
             tab=TabbedPanelItem(text=title,font_size="11sp"); outer=BoxLayout(orientation="vertical",spacing=dp(3))
             selector=Spinner(text="Выберите запись",values=tuple(str(i+1)+" · "+str(x.get(fields[0][1],"")) for i,x in enumerate(self.app.data.get(key,[]))),size_hint_y=None,height=dp(38))
@@ -34,7 +34,7 @@
                 if rows:
                     i=len(rows)-1 if index is None else max(0,min(index,len(rows)-1));selector.text=selector.values[i]
                 else:selector.text="Выберите запись"
-            def addrow(*_):
+            def commit_current():\n                try:i=int(selector.text.split("·",1)[0].strip())-1\n                except:return\n                rows=self.app.data.get(key,[])\n                if 0<=i<len(rows):\n                    for k,ed in edits.items():rows[i][k]=ed.text.strip()\n            pending_commits.append(commit_current)\n            def addrow(*_):
                 self.app.data.setdefault(key,[]).append({k:"" for _,k in fields});refresh_sel();self.app.save_settings();self.set_status("Запись добавлена и сохранена")
             def saverow(*_):
                 try:i=int(selector.text.split("·",1)[0].strip())-1
