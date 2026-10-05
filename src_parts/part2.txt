@@ -6,7 +6,7 @@ class Main(BoxLayout):
         ab=Button(text=self.app.data.get("ui",{}).get("admin_text","⚙"),size_hint_x=None,width=dp(52)); ab.bind(on_release=self.admin_login); self.header.add_widget(ab); self.add_widget(self.header)
         self.tabholder=BoxLayout(); self.add_widget(self.tabholder)
         bar=BoxLayout(size_hint_y=None,height=dp(52),spacing=dp(5)); ui=self.app.data.get("ui",{}); ob=Button(text=ui.get("open_text","Open As-Built file")); sb=Button(text=ui.get("save_text","Save As-Built file")); ob.bind(on_release=self.open_document); sb.bind(on_release=self.save_document); bar.add_widget(ob);bar.add_widget(sb);self.add_widget(bar)
-        self.author_bar=BoxLayout(size_hint_y=None,height=dp(1),spacing=dp(1)); self.add_widget(self.author_bar)
+        self.author_bar=BoxLayout(size_hint_y=None,height=dp(34),spacing=dp(3)); self.add_widget(self.author_bar); self.refresh_author()
         self.stat=Label(text=self.status,size_hint_y=None,height=dp(28),font_size="12sp"); self.add_widget(self.stat); self.refresh()
     def set_status(self,s): self.status=s; self.stat.text=s
     def refresh_author(self):
@@ -26,7 +26,7 @@ class Main(BoxLayout):
         except Exception as e:self.set_status("Не удалось открыть ссылку: "+str(e))
     def refresh(self):
         keep_tab=self.active_module_id
-        self.title_label.text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"); self.tabholder.clear_widgets(); mods=self.app.data.get("modules",[]); tab_w=min(dp(68),(Window.width-dp(14))/max(1,len(mods))); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36),tab_width=tab_w); self.tabs=tabs
+        self.title_label.text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"); self.refresh_author(); self.tabholder.clear_widgets(); mods=self.app.data.get("modules",[]); tab_w=min(dp(68),(Window.width-dp(14))/max(1,len(mods))); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36),tab_width=tab_w); self.tabs=tabs
         for m in self.app.data["modules"]:
             ti=TabbedPanelItem(text=m["id"],font_size="11sp"); ti.bind(on_release=lambda tab:self._remember_tab(tab.text)); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(5),padding=dp(5)); content.bind(minimum_height=content.setter("height"))
             content.add_widget(Label(text=f'[b]{m.get("name")}[/b]  || ID: {m.get("address")} || Ver.: {m.get("version","1")}',markup=True,size_hint_y=None,height=dp(34),halign="left",valign="middle",font_size="10sp",shorten=True,shorten_from="right"))
