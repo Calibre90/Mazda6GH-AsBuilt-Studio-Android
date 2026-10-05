@@ -35,7 +35,14 @@
                 if rows:
                     i=len(rows)-1 if index is None else max(0,min(index,len(rows)-1));selector.text=selector.values[i]
                 else:selector.text="Выберите запись"
-            def commit_current():\n                try:i=int(selector.text.split("·",1)[0].strip())-1\n                except:return\n                rows=self.app.data.get(key,[])\n                if 0<=i<len(rows):\n                    for k,ed in edits.items():rows[i][k]=ed.text.strip()\n            pending_commits.append(commit_current)\n            def addrow(*_):
+            def commit_current():
+                try:i=int(selector.text.split("·",1)[0].strip())-1
+                except:return
+                rows=self.app.data.get(key,[])
+                if 0<=i<len(rows):
+                    for k,ed in edits.items():rows[i][k]=ed.text.strip()
+            pending_commits.append(commit_current)
+            def addrow(*_):
                 self.app.data.setdefault(key,[]).append({k:"" for _,k in fields});refresh_sel();self.app.save_settings();self.set_status("Запись добавлена и сохранена")
             def saverow(*_):
                 try:i=int(selector.text.split("·",1)[0].strip())-1
