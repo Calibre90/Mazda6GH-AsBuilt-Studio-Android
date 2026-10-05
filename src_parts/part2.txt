@@ -1,7 +1,7 @@
 class Main(BoxLayout):
     status=StringProperty("Готово")
     def __init__(self,**kw):
-        super().__init__(orientation="vertical",spacing=dp(3),padding=(dp(7),dp(28),dp(7),dp(7)),**kw); self.app=App.get_running_app(); self.changed={}; self.changed_positions={}; self.tabs=None; self.pending_save_module=None
+        super().__init__(orientation="vertical",spacing=dp(3),padding=(dp(7),dp(28),dp(7),dp(7)),**kw); self.app=App.get_running_app(); self.changed={}; self.changed_positions={}; self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data.get("rows",[])}; self.tabs=None; self.pending_save_module=None
         self.header=BoxLayout(size_hint_y=None,height=dp(42),spacing=dp(5)); self.title_label=Label(text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"),font_size="13sp",halign="right"); self.header.add_widget(self.title_label)
         ab=Button(text=self.app.data.get("ui",{}).get("admin_text","⚙"),size_hint_x=None,width=dp(52)); ab.bind(on_release=self.admin_login); self.header.add_widget(ab); self.add_widget(self.header)
         self.tabholder=BoxLayout(); self.add_widget(self.tabholder)
@@ -25,6 +25,7 @@ class Main(BoxLayout):
                 import webbrowser; webbrowser.open(url)
         except Exception as e:self.set_status("Не удалось открыть ссылку: "+str(e))
     def refresh(self):
+        keep_tab=self.tabs.current_tab.text if self.tabs and self.tabs.current_tab else None
         self.title_label.text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"); self.tabholder.clear_widgets(); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(42)); self.tabs=tabs
         for m in self.app.data["modules"]:
             ti=TabbedPanelItem(text=m["id"]); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(5),padding=dp(5)); content.bind(minimum_height=content.setter("height"))
@@ -41,10 +42,13 @@ class Main(BoxLayout):
             for r in [x for x in self.app.data["rows"] if x.get("module")==m["id"]]:
                 raw=norm(r.get("value","")); pos=self.changed_positions.get(r["address"],set()); rendered=""
                 for i,ch in enumerate(raw): rendered += (f'[color=ff3333][b]{ch}[/b][/color]' if i in pos else ch); rendered += (" " if i%4==3 else "")
-                addr=f'[color=ff3333]{r["address"]}[/color]' if r["address"] in self.changed else r["address"]
+                addr=r["address"]
                 txt=f'[b]{addr}[/b]    {rendered.strip()}'; content.add_widget(Label(text=txt,markup=True,size_hint_y=None,height=dp(40),font_name="Roboto",font_size="14sp",halign="left"))
             scroll.add_widget(content);ti.add_widget(scroll);tabs.add_widget(ti)
         self.tabholder.add_widget(tabs)
+        if keep_tab:
+            target=next((t for t in tabs.tab_list if t.text==keep_tab),None)
+            if target: tabs.switch_to(target)
     def feature_state(self,f):
         r=next((x for x in self.app.data["rows"] if x.get("module")==f.get("module") and x.get("address")==f.get("row")),None)
         if not r:return False
@@ -66,8 +70,10 @@ class Main(BoxLayout):
             else:
                 idx=parse_indices(f.get("hex_indices",0)); target=norm(f.get("on") if active else f.get("off",""))
                 if len(target)!=len(idx): raise ValueError("количество HEX индексов не совпадает со значением")
-                for n,i in enumerate(idx): arr[i]=target[n]
-            r["value"]=" ".join("".join(arr)[i:i+4] for i in range(0,len(arr),4)); recalc(r); after=norm(r["value"]); diff={i for i,(a,b) in enumerate(zip(before,after)) if a!=b}; self.changed_positions.setdefault(r["address"],set()).update(diff); self.changed[r["address"]]=True; self.app.save_settings(); self.set_status(f'{f.get("label")}: изменено'); self.refresh()
+                for n,i in enumerate(idx):
+                    if i>=len(arr): raise ValueError(f"HEX индекс {i} вне строки {r.get('address')}")
+                    arr[i]=target[n]
+            r["value"]=" ".join("".join(arr)[i:i+4] for i in range(0,len(arr),4)); recalc(r); after=norm(r["value"]); diff={i for i,(a,b) in enumerate(zip(before,after)) if a!=b}; baseline=self.original_values.get(r["address"],before); final=norm(r["value"]); live={i for i in range(min(len(baseline),len(final))) if baseline[i]!=final[i]}; self.changed_positions[r["address"]]=live; self.changed[r["address"]]=bool(live); self.app.save_settings(); self.set_status(f'{f.get("label")}: изменено' if live else f'{f.get("label")}: исходное значение'); self.refresh()
         except Exception as e:self.set_status("Ошибка параметра: "+str(e))
     def open_document(self,*_):
         if platform == "android":
