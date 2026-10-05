@@ -1,4 +1,4 @@
-name: Build Android APK V2.4
+name: Build Android APK V2.4 FULL
 on:
   workflow_dispatch:
   push:
@@ -10,12 +10,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Assemble full V2.4 source
-        run: cat source_parts/00.py.part source_parts/01.py.part source_parts/02.py.part > main.py
+        run: cat src_parts/part1.txt src_parts/part2.txt src_parts/part3a.txt src_parts/part3b.txt src_parts/part3c.txt src_parts/part3d.txt > main.py
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - run: pip install -r requirements-dev.txt
-      - run: python -m py_compile main.py
+      - name: Compile full application
+        run: python -m py_compile main.py
       - run: pytest -q
 
   build:
@@ -26,10 +27,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Assemble full V2.4 source
-        run: cat source_parts/00.py.part source_parts/01.py.part source_parts/02.py.part > main.py
-      - name: Build debug APK
+        run: cat src_parts/part1.txt src_parts/part2.txt src_parts/part3a.txt src_parts/part3b.txt src_parts/part3c.txt src_parts/part3d.txt > main.py
+      - name: Verify test placeholder is absent
+        run: "! grep -q 'Android build initialized' main.py"
+      - name: Build full debug APK
         run: printf 'y\n' | buildozer android debug
-      - name: Upload APK
+      - name: Upload full APK
         uses: actions/upload-artifact@v4
         with:
           name: Mazda6GH-AsBuilt-Studio-Android-V2.4-FULL-APK
