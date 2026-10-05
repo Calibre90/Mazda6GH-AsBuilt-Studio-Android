@@ -82,7 +82,8 @@ class Main(BoxLayout):
                 for n,i in enumerate(idx):
                     if i>=len(arr): raise ValueError(f"HEX индекс {i} вне строки {r.get('address')}")
                     arr[i]=target[n]
-            if active: r["value"]=" ".join("".join(arr)[i:i+4] for i in range(0,len(arr),4)); recalc(r)\n            self.feature_active[fid]=bool(active); after=norm(r["value"]); diff={i for i,(a,b) in enumerate(zip(before,after)) if a!=b}; baseline=self.original_values.get(r["address"],before); final=norm(r["value"]); live={i for i in range(min(len(baseline),len(final))) if baseline[i]!=final[i]}; self.changed_positions[r["address"]]=live; self.changed[r["address"]]=bool(live); self.set_status(f'{f.get("label")}: изменено' if live else f'{f.get("label")}: исходное значение'); self.refresh()
+            if active: r["value"]=" ".join("".join(arr)[i:i+4] for i in range(0,len(arr),4)); recalc(r)
+            self.feature_active[fid]=bool(active); after=norm(r["value"]); diff={i for i,(a,b) in enumerate(zip(before,after)) if a!=b}; baseline=self.original_values.get(r["address"],before); final=norm(r["value"]); live={i for i in range(min(len(baseline),len(final))) if baseline[i]!=final[i]}; self.changed_positions[r["address"]]=live; self.changed[r["address"]]=bool(live); self.set_status(f'{f.get("label")}: изменено' if live else f'{f.get("label")}: исходное значение'); self.refresh()
         except Exception as e:self.set_status("Ошибка параметра: "+str(e))
     def open_document(self,*_):
         if platform == "android":
