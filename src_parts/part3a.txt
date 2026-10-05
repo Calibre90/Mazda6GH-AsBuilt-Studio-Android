@@ -15,7 +15,9 @@
                 r["module"]=selected_id
                 existing[(selected_id,r["address"])]=r
             self.app.data["rows"]=list(existing.values()); self.changed={}; self.changed_positions={}; self.feature_active={}; self.row_feature_baselines={}; self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data["rows"]}
-            self.app.save_settings(); self.refresh(); self.set_status(f"Открыто строк: {len(parsed)}")
+            self.app.save_settings()
+            from kivy.clock import Clock
+            Clock.schedule_once(lambda _dt,n=len(parsed): (self.refresh(),self.set_status(f"Открыто строк: {n}")),0)
         except Exception as e:self.set_status("Ошибка открытия: "+str(e))
     def _module_abt_bytes(self,m):
         rows=[r for r in self.app.data["rows"] if r.get("module")==m["id"] and r.get("value","").strip()]
