@@ -26,17 +26,17 @@ class Main(BoxLayout):
         except Exception as e:self.set_status("Не удалось открыть ссылку: "+str(e))
     def refresh(self):
         keep_tab=self.active_module_id
-        self.title_label.text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"); self.tabholder.clear_widgets(); mods=self.app.data.get("modules",[]); tab_w=max(dp(40),min(dp(68),(Window.width-dp(14))/max(1,len(mods)))); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36),tab_width=tab_w); self.tabs=tabs
+        self.title_label.text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"); self.tabholder.clear_widgets(); mods=self.app.data.get("modules",[]); tab_w=min(dp(68),(Window.width-dp(14))/max(1,len(mods))); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36),tab_width=tab_w); self.tabs=tabs
         for m in self.app.data["modules"]:
             ti=TabbedPanelItem(text=m["id"],font_size="11sp"); ti.bind(on_release=lambda tab:self._remember_tab(tab.text)); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(5),padding=dp(5)); content.bind(minimum_height=content.setter("height"))
-            content.add_widget(Label(text=f'[b]{m.get("name")}[/b]  || ID: {m.get("address")} || Ver.: {m.get("version","1")}',markup=True,size_hint_y=None,height=dp(46),halign="left",font_size="14sp"))
+            content.add_widget(Label(text=f'[b]{m.get("name")}[/b]  || ID: {m.get("address")} || Ver.: {m.get("version","1")}',markup=True,size_hint_y=None,height=dp(34),halign="left",valign="middle",font_size="10sp",shorten=True,shorten_from="right"))
             feats=[x for x in self.app.data["features"] if x.get("module")==m["id"]]
             if feats:
                 cols=max(1,int(self.app.data.get("ui",{}).get("feature_columns",2)))
                 grid=GridLayout(cols=cols,size_hint_y=None,spacing=dp(2),row_default_height=dp(38),row_force_default=True)
                 grid.bind(minimum_height=grid.setter("height"))
                 for f in feats:
-                    line=BoxLayout(size_hint_y=None,height=dp(38),spacing=dp(2)); cb=CheckBox(size_hint_x=None,width=dp(38)); cb.active=bool(self.feature_active.get(f.get("id"),False)); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); line.add_widget(Label(text=f.get("label",""),halign="left",font_size="12sp")); grid.add_widget(line)
+                    line=BoxLayout(size_hint_y=None,height=dp(38),spacing=dp(2)); cb=CheckBox(size_hint_x=None,width=dp(38)); fk=f.get("id") or (str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label"))); cb.active=bool(self.feature_active.get(fk,False)); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); line.add_widget(Label(text=f.get("label",""),halign="left",font_size="12sp")); grid.add_widget(line)
                 content.add_widget(grid)
             
             for r in [x for x in self.app.data["rows"] if x.get("module")==m["id"]]:
