@@ -14,7 +14,7 @@
     def admin_panel(self):
         root=BoxLayout(orientation="vertical",spacing=dp(3),padding=dp(4))
         tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36))
-        pending_commits=[]
+        pending_commits=[]\n        editor_states=[]
         def editor_tab(title,key,fields):
             tab=TabbedPanelItem(text=title,font_size="11sp"); outer=BoxLayout(orientation="vertical",spacing=dp(3))
             selector=Spinner(text="Выберите запись",values=tuple(str(i+1)+" · "+str(x.get(fields[0][1],"")) for i,x in enumerate(self.app.data.get(key,[]))),size_hint_y=None,height=dp(38))
@@ -41,7 +41,7 @@
                 rows=self.app.data.get(key,[])
                 if 0<=i<len(rows):
                     for k,ed in edits.items():rows[i][k]=ed.text.strip()
-            pending_commits.append(commit_current)
+            pending_commits.append(commit_current)\n            editor_states.append((key,selector,edits,commit_current))
             def addrow(*_):
                 self.app.data.setdefault(key,[]).append({k:"" for _,k in fields});refresh_sel();self.app.save_settings();self.set_status("Запись добавлена и сохранена")
             def saverow(*_):
@@ -59,7 +59,7 @@
             add.bind(on_release=addrow);save.bind(on_release=saverow);delete.bind(on_release=delrow)
             for b in (add,save,delete):acts.add_widget(b)
             outer.add_widget(acts);tab.add_widget(outer);tabs.add_widget(tab)
-        editor_tab("Функции и биты","features",[("Модуль","module"),("Надпись / функция","label"),("Строка","row"),("Режим HEX/BITS","mode"),("HEX индексы","hex_indices"),("Byte (BITS)","byte_index"),("Биты","bits"),("ВКЛ","on"),("ВЫКЛ","off")])
+        editor_tab("Функции и биты","features",[("ID функции","id"),("Модуль","module"),("Надпись / функция","label"),("Строка","row"),("Режим HEX/BITS","mode"),("HEX индексы","hex_indices"),("Byte (BITS)","byte_index"),("Биты","bits"),("ВКЛ","on"),("ВЫКЛ","off")])
         editor_tab("Строки As-Built","rows",[("Модуль","module"),("Строка","address"),("Значение","value")])
         editor_tab("Блоки и доступ","modules",[("ID","id"),("Название","name"),("Адрес","address"),("Версия","version")])
         ui_tab=TabbedPanelItem(text="Оформление",font_size="11sp");svu=ScrollView();form=GridLayout(cols=2,spacing=dp(3),size_hint_y=None,row_default_height=dp(36),row_force_default=True);form.bind(minimum_height=form.setter("height"));fields={};ui=self.app.data.get("ui",{})
