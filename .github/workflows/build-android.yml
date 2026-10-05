@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build debug APK
-        run: buildozer android debug
+        run: printf 'y\n' | buildozer android debug
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
