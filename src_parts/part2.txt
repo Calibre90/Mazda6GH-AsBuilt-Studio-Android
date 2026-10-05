@@ -1,7 +1,7 @@
 class Main(BoxLayout):
     status=StringProperty("Готово")
     def __init__(self,**kw):
-        super().__init__(orientation="vertical",spacing=dp(3),padding=(dp(7),dp(28),dp(7),dp(7)),**kw); self.app=App.get_running_app(); self.changed={}; self.changed_positions={}; self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data.get("rows",[])}; self.tabs=None; self.pending_save_module=None; self.active_module_id=self.app.data.get("modules",[{"id":"IC"}])[0].get("id","IC")
+        super().__init__(orientation="vertical",spacing=dp(3),padding=(dp(7),dp(28),dp(7),dp(7)),**kw); self.app=App.get_running_app(); self.changed={}; self.changed_positions={}; self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data.get("rows",[])}; self.tabs=None; self.pending_save_module=None; self.active_module_id=self.app.data.get("modules",[{"id":"IC"}])[0].get("id","IC"); self.feature_active={}; self.feature_baselines={}
         self.header=BoxLayout(size_hint_y=None,height=dp(42),spacing=dp(5)); self.title_label=Label(text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"),font_size="13sp",halign="right"); self.header.add_widget(self.title_label)
         ab=Button(text=self.app.data.get("ui",{}).get("admin_text","⚙"),size_hint_x=None,width=dp(52)); ab.bind(on_release=self.admin_login); self.header.add_widget(ab); self.add_widget(self.header)
         self.tabholder=BoxLayout(); self.add_widget(self.tabholder)
@@ -26,9 +26,9 @@ class Main(BoxLayout):
         except Exception as e:self.set_status("Не удалось открыть ссылку: "+str(e))
     def refresh(self):
         keep_tab=self.active_module_id
-        self.title_label.text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"); self.tabholder.clear_widgets(); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(42)); self.tabs=tabs
+        self.title_label.text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"); self.tabholder.clear_widgets(); mods=self.app.data.get("modules",[]); tab_w=max(dp(40),min(dp(68),(Window.width-dp(14))/max(1,len(mods)))); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36),tab_width=tab_w); self.tabs=tabs
         for m in self.app.data["modules"]:
-            ti=TabbedPanelItem(text=m["id"]); ti.bind(on_release=lambda tab:self._remember_tab(tab.text)); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(5),padding=dp(5)); content.bind(minimum_height=content.setter("height"))
+            ti=TabbedPanelItem(text=m["id"],font_size="11sp"); ti.bind(on_release=lambda tab:self._remember_tab(tab.text)); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(5),padding=dp(5)); content.bind(minimum_height=content.setter("height"))
             content.add_widget(Label(text=f'[b]{m.get("name")}[/b]  || ID: {m.get("address")} || Ver.: {m.get("version","1")}',markup=True,size_hint_y=None,height=dp(46),halign="left",font_size="14sp"))
             feats=[x for x in self.app.data["features"] if x.get("module")==m["id"]]
             if feats:
@@ -36,7 +36,7 @@ class Main(BoxLayout):
                 grid=GridLayout(cols=cols,size_hint_y=None,spacing=dp(2),row_default_height=dp(38),row_force_default=True)
                 grid.bind(minimum_height=grid.setter("height"))
                 for f in feats:
-                    line=BoxLayout(size_hint_y=None,height=dp(38),spacing=dp(2)); cb=CheckBox(size_hint_x=None,width=dp(38)); cb.active=self.feature_state(f); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); line.add_widget(Label(text=f.get("label",""),halign="left",font_size="12sp")); grid.add_widget(line)
+                    line=BoxLayout(size_hint_y=None,height=dp(38),spacing=dp(2)); cb=CheckBox(size_hint_x=None,width=dp(38)); cb.active=bool(self.feature_active.get(f.get("id"),False)); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); line.add_widget(Label(text=f.get("label",""),halign="left",font_size="12sp")); grid.add_widget(line)
                 content.add_widget(grid)
             
             for r in [x for x in self.app.data["rows"] if x.get("module")==m["id"]]:
@@ -70,19 +70,19 @@ class Main(BoxLayout):
         self.active_module_id=f.get("module",self.active_module_id)
         r=next((x for x in self.app.data["rows"] if x.get("module")==f.get("module") and x.get("address")==f.get("row")),None)
         if not r:return
-        before=norm(r["value"]); arr=list(before); mode=str(f.get("mode","HEX")).upper()
+        fid=f.get("id") or (str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label"))); before=norm(r["value"]); self.feature_baselines.setdefault(fid,before) if active else None; arr=list(before); mode=str(f.get("mode","HEX")).upper()
         try:
             if mode=="BITS":
                 bi=int(f.get("byte_index",0)); bits=parse_indices(f.get("bits","")); old=int(before[bi*2:bi*2+2],16); new=old
                 for b in bits:new=(new|(1<<b)) if active else (new&~(1<<b))
                 hx=f"{new:02X}"; arr[bi*2:bi*2+2]=hx
             else:
-                idx=parse_indices(f.get("hex_indices",0)); target=norm(f.get("on") if active else f.get("off",""))
+                idx=parse_indices(f.get("hex_indices",0)); target=norm(f.get("on",""))
                 if len(target)!=len(idx): raise ValueError("количество HEX индексов не совпадает со значением")
                 for n,i in enumerate(idx):
                     if i>=len(arr): raise ValueError(f"HEX индекс {i} вне строки {r.get('address')}")
                     arr[i]=target[n]
-            r["value"]=" ".join("".join(arr)[i:i+4] for i in range(0,len(arr),4)); recalc(r); after=norm(r["value"]); diff={i for i,(a,b) in enumerate(zip(before,after)) if a!=b}; baseline=self.original_values.get(r["address"],before); final=norm(r["value"]); live={i for i in range(min(len(baseline),len(final))) if baseline[i]!=final[i]}; self.changed_positions[r["address"]]=live; self.changed[r["address"]]=bool(live); self.app.save_settings(); self.set_status(f'{f.get("label")}: изменено' if live else f'{f.get("label")}: исходное значение'); self.refresh()
+            if active: r["value"]=" ".join("".join(arr)[i:i+4] for i in range(0,len(arr),4)); recalc(r)\n            self.feature_active[fid]=bool(active); after=norm(r["value"]); diff={i for i,(a,b) in enumerate(zip(before,after)) if a!=b}; baseline=self.original_values.get(r["address"],before); final=norm(r["value"]); live={i for i in range(min(len(baseline),len(final))) if baseline[i]!=final[i]}; self.changed_positions[r["address"]]=live; self.changed[r["address"]]=bool(live); self.set_status(f'{f.get("label")}: изменено' if live else f'{f.get("label")}: исходное значение'); self.refresh()
         except Exception as e:self.set_status("Ошибка параметра: "+str(e))
     def open_document(self,*_):
         if platform == "android":
