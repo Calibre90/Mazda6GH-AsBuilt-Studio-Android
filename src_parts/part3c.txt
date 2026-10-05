@@ -14,7 +14,8 @@
     def admin_panel(self):
         root=BoxLayout(orientation="vertical",spacing=dp(3),padding=dp(4))
         tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36))
-        pending_commits=[]\n        editor_states=[]
+        pending_commits=[]
+        editor_states=[]
         def editor_tab(title,key,fields):
             tab=TabbedPanelItem(text=title,font_size="11sp"); outer=BoxLayout(orientation="vertical",spacing=dp(3))
             selector=Spinner(text="Выберите запись",values=tuple(str(i+1)+" · "+str(x.get(fields[0][1],"")) for i,x in enumerate(self.app.data.get(key,[]))),size_hint_y=None,height=dp(38))
@@ -41,7 +42,8 @@
                 rows=self.app.data.get(key,[])
                 if 0<=i<len(rows):
                     for k,ed in edits.items():rows[i][k]=ed.text.strip()
-            pending_commits.append(commit_current)\n            editor_states.append((key,selector,edits,commit_current))
+            pending_commits.append(commit_current)
+            editor_states.append((key,selector,edits,commit_current))
             def addrow(*_):
                 self.app.data.setdefault(key,[]).append({k:"" for _,k in fields});refresh_sel();self.app.save_settings();self.set_status("Запись добавлена и сохранена")
             def saverow(*_):
