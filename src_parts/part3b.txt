@@ -20,7 +20,7 @@
             if not parsed:self.set_status("ABT строки не распознаны");return
             existing={(r.get("module"),r.get("address")):r for r in self.app.data["rows"]}
             for r in parsed:existing[(r["module"],r["address"])]=r
-            self.app.data["rows"]=list(existing.values());self.changed={};self.changed_positions={};self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data["rows"]}
+            self.app.data["rows"]=list(existing.values());self.changed={};self.changed_positions={};self.feature_active={};self.row_feature_baselines={};self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data["rows"]}
             self.app.save_settings();pop.dismiss();self.refresh();self.set_status(f"Открыто строк: {len(parsed)}")
         except Exception as e:self.set_status(str(e))
     def current_module(self):
