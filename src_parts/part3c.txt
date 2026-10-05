@@ -35,19 +35,19 @@
                     i=len(rows)-1 if index is None else max(0,min(index,len(rows)-1));selector.text=selector.values[i]
                 else:selector.text="Выберите запись"
             def addrow(*_):
-                self.app.data.setdefault(key,[]).append({k:"" for _,k in fields});refresh_sel()
+                self.app.data.setdefault(key,[]).append({k:"" for _,k in fields});refresh_sel();self.app.save_settings();self.set_status("Запись добавлена и сохранена")
             def saverow(*_):
                 try:i=int(selector.text.split("·",1)[0].strip())-1
                 except:return
                 rows=self.app.data.get(key,[])
                 if 0<=i<len(rows):
                     for k,ed in edits.items():rows[i][k]=ed.text.strip()
-                    refresh_sel(i);self.set_status("Запись изменена")
+                    refresh_sel(i);self.app.save_settings();self.set_status("Запись изменена и сохранена");self.refresh()
             def delrow(*_):
                 try:i=int(selector.text.split("·",1)[0].strip())-1
                 except:return
                 rows=self.app.data.get(key,[])
-                if 0<=i<len(rows):rows.pop(i);refresh_sel(max(0,i-1))
+                if 0<=i<len(rows):rows.pop(i);refresh_sel(max(0,i-1));self.app.save_settings();self.set_status("Запись удалена и сохранена");self.refresh()
             add.bind(on_release=addrow);save.bind(on_release=saverow);delete.bind(on_release=delrow)
             for b in (add,save,delete):acts.add_widget(b)
             outer.add_widget(acts);tab.add_widget(outer);tabs.add_widget(tab)
