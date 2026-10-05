@@ -30,6 +30,10 @@ jobs:
         run: cat src_parts/part1.txt src_parts/part2.txt src_parts/part3a.txt src_parts/part3b.txt src_parts/part3c.txt src_parts/part3d.txt > main.py
       - name: Verify test placeholder is absent
         run: "! grep -q 'Android build initialized' main.py"
+      - name: Generate approved splash and app icon
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 generate_brand_assets.py
       - name: Build full debug APK
         run: printf 'y\n' | buildozer android debug
       - name: Upload full APK
