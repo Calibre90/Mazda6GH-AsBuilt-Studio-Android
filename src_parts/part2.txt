@@ -38,7 +38,7 @@ class Main(BoxLayout):
                 raw=norm(r.get("value","")); pos=self.changed_positions.get(r["address"],set()); rendered=""
                 for i,ch in enumerate(raw): rendered += (f'[color=ff3333][b]{ch}[/b][/color]' if i in pos else ch); rendered += (" " if i%4==3 else "")
                 addr=f'[color=ff3333]{r["address"]}[/color]' if r["address"] in self.changed else r["address"]
-                txt=f'[b]{addr}[/b]   {rendered.strip()}'; content.add_widget(Label(text=txt,markup=True,size_hint_y=None,height=dp(38),font_name="RobotoMono",font_size="13sp"))
+                txt=f'[b]{addr}[/b]   {rendered.strip()}'; content.add_widget(Label(text=txt,markup=True,size_hint_y=None,height=dp(38),font_name="Roboto",font_size="13sp"))
             scroll.add_widget(content);ti.add_widget(scroll);tabs.add_widget(ti)
         self.tabholder.add_widget(tabs)
     def feature_state(self,f):
