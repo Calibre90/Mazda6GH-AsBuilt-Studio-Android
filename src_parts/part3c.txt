@@ -12,61 +12,54 @@
             else:self.set_status("Неверный логин или пароль")
         b.bind(on_release=go);pop.open()
     def admin_panel(self):
-        root=BoxLayout(orientation="vertical",spacing=dp(5),padding=dp(7))
-        tabs=TabbedPanel(do_default_tab=False)
-        editors={}
-
-        def add_json_tab(title,key):
-            tab=TabbedPanelItem(text=title)
-            box=BoxLayout(orientation="vertical",spacing=dp(4))
-            hint=Label(text="Редактирование как в Windows V7.1. Изменения сохраняются в приложении.",size_hint_y=None,height=dp(32),font_size="11sp")
-            ed=TextInput(text=json.dumps(self.app.data.get(key,[]),ensure_ascii=False,indent=2),font_name="Roboto",font_size="12sp")
-            box.add_widget(hint); box.add_widget(ed); tab.add_widget(box); tabs.add_widget(tab); editors[key]=ed
-
-        ui_tab=TabbedPanelItem(text="Оформление")
-        sv=ScrollView(); form=GridLayout(cols=1,spacing=dp(5),size_hint_y=None)
-        form.bind(minimum_height=form.setter("height")); ui=self.app.data.get("ui",{}); fields={}
-        items=[("title","Название приложения"),("author_text","Кто сделал программу"),("link1_text","Текст ссылки 1"),("link1_url","URL ссылки 1"),("link2_text","Текст ссылки 2"),("link2_url","URL ссылки 2"),("open_text","Кнопка открытия"),("save_text","Кнопка сохранения"),("ready_text","Строка состояния"),("feature_columns","Колонки функций")]
-        for key,label in items:
-            form.add_widget(Label(text=label,size_hint_y=None,height=dp(24)))
-            field=TextInput(text=str(ui.get(key,"")),multiline=False,size_hint_y=None,height=dp(42))
-            fields[key]=field; form.add_widget(field)
-        sv.add_widget(form); ui_tab.add_widget(sv); tabs.add_widget(ui_tab)
-        add_json_tab("Функции","features")
-        add_json_tab("Строки","rows")
-        add_json_tab("Блоки","modules")
-
-        account=TabbedPanelItem(text="Доступ")
-        abox=BoxLayout(orientation="vertical",spacing=dp(6),padding=dp(8))
-        user=TextInput(text=self.app.data.get("username","admin"),hint_text="Логин",multiline=False,size_hint_y=None,height=dp(44))
-        pw=TextInput(hint_text="Новый пароль (пусто — не менять)",password=True,multiline=False,size_hint_y=None,height=dp(44))
-        abox.add_widget(Label(text="Учётные данные администратора",size_hint_y=None,height=dp(32)))
-        abox.add_widget(user); abox.add_widget(pw); abox.add_widget(Widget())
-        account.add_widget(abox); tabs.add_widget(account)
-
-        root.add_widget(tabs)
-        buttons=BoxLayout(size_hint_y=None,height=dp(50),spacing=dp(5))
-        save=Button(text="Сохранить всё"); close=Button(text="Закрыть")
-        buttons.add_widget(save); buttons.add_widget(close); root.add_widget(buttons)
-        pop=Popup(title="Админ-панель — Android / Windows V7.1",content=root,size_hint=(.99,.97)); close.bind(on_release=pop.dismiss)
-
+        root=BoxLayout(orientation="vertical",spacing=dp(4),padding=dp(6))
+        tabs=TabbedPanel(do_default_tab=False,tab_height=dp(42))
+        def table_tab(title,key,columns):
+            tab=TabbedPanelItem(text=title); box=BoxLayout(orientation="vertical",spacing=dp(4))
+            sv=ScrollView(); grid=GridLayout(cols=len(columns),spacing=dp(2),size_hint_y=None,row_default_height=dp(42),row_force_default=True)
+            grid.bind(minimum_height=grid.setter("height"))
+            for label,_ in columns: grid.add_widget(Label(text="[b]"+label+"[/b]",markup=True,font_size="11sp"))
+            rows=self.app.data.get(key,[])
+            def rebuild():
+                grid.clear_widgets()
+                for label,_ in columns:grid.add_widget(Label(text="[b]"+label+"[/b]",markup=True,font_size="11sp"))
+                for item in rows:
+                    for _,field in columns:
+                        ed=TextInput(text=str(item.get(field,"")),multiline=False,font_size="11sp")
+                        ed.bind(text=lambda w,v,obj=item,k=field:obj.__setitem__(k,v))
+                        grid.add_widget(ed)
+            rebuild(); sv.add_widget(grid); box.add_widget(sv)
+            actions=BoxLayout(size_hint_y=None,height=dp(48),spacing=dp(4))
+            add=Button(text="Добавить"); delete=Button(text="Удалить последнюю")
+            def addrow(*_):
+                rows.append({k:"" for _,k in columns}); rebuild()
+            def delrow(*_):
+                if rows: rows.pop(); rebuild()
+            add.bind(on_release=addrow); delete.bind(on_release=delrow); actions.add_widget(add); actions.add_widget(delete); box.add_widget(actions)
+            tab.add_widget(box); tabs.add_widget(tab)
+        table_tab("Функции и биты","features",[("Модуль","module"),("Надпись / функция","label"),("Строка","row"),("Режим","mode"),("HEX индексы / биты","hex_indices"),("ВКЛ","on"),("ВЫКЛ","off")])
+        table_tab("Строки As-Built","rows",[("Модуль","module"),("Строка","address"),("Значение","value")])
+        block=TabbedPanelItem(text="Блоки и доступ"); bb=BoxLayout(orientation="vertical",spacing=dp(5)); sv=ScrollView(); bg=GridLayout(cols=3,spacing=dp(2),size_hint_y=None,row_default_height=dp(42),row_force_default=True); bg.bind(minimum_height=bg.setter("height"))
+        for h in ("ID","Название","Адрес"):bg.add_widget(Label(text="[b]"+h+"[/b]",markup=True))
+        for m in self.app.data.get("modules",[]):
+            for k in ("id","name","address"):
+                ed=TextInput(text=str(m.get(k,"")),multiline=False); ed.bind(text=lambda w,v,obj=m,key=k:obj.__setitem__(key,v)); bg.add_widget(ed)
+        sv.add_widget(bg); bb.add_widget(sv); user=TextInput(text=self.app.data.get("username","admin"),hint_text="Логин администратора",multiline=False,size_hint_y=None,height=dp(42)); pw=TextInput(hint_text="Новый пароль (пусто — без изменений)",password=True,multiline=False,size_hint_y=None,height=dp(42)); bb.add_widget(user);bb.add_widget(pw);block.add_widget(bb);tabs.add_widget(block)
+        ui_tab=TabbedPanelItem(text="Оформление"); svu=ScrollView(); form=GridLayout(cols=2,spacing=dp(4),size_hint_y=None,row_default_height=dp(42),row_force_default=True);form.bind(minimum_height=form.setter("height"));fields={};ui=self.app.data.get("ui",{})
+        for key,label in [("title","Название окна"),("background","Фон приложения (#HEX)"),("background_image","Фоновая картинка"),("panel","Фон HEX-блока (#HEX)"),("feature_columns","Колонки функций"),("open_text","Кнопка открытия"),("save_text","Кнопка сохранения"),("admin_text","Кнопка админки"),("author_text","Текст возле Admin"),("ready_text","Текст статуса")]:
+            form.add_widget(Label(text=label,halign="left")); ed=TextInput(text=str(ui.get(key,"")),multiline=False);fields[key]=ed;form.add_widget(ed)
+        svu.add_widget(form);ui_tab.add_widget(svu);tabs.add_widget(ui_tab);root.add_widget(tabs)
+        buttons=BoxLayout(size_hint_y=None,height=dp(50),spacing=dp(5));save=Button(text="Сохранить изменения");close=Button(text="Закрыть");buttons.add_widget(save);buttons.add_widget(close);root.add_widget(buttons)
+        pop=Popup(title="Администрирование интерфейса",content=root,size_hint=(.99,.94));close.bind(on_release=pop.dismiss)
         def apply(*_):
             try:
-                for k,t in fields.items():
-                    v=t.text.strip()
-                    if k=="feature_columns":
-                        v=max(1,int(v or "2"))
-                    self.app.data.setdefault("ui",{})[k]=v
-                for key,ed in editors.items():
-                    value=json.loads(ed.text)
-                    if not isinstance(value,list): raise ValueError(key+" должен быть JSON-массивом")
-                    self.app.data[key]=value
-                if not user.text.strip(): raise ValueError("Логин не может быть пустым")
+                for k,e in fields.items():self.app.data.setdefault("ui",{})[k]=max(1,int(e.text or "2")) if k=="feature_columns" else e.text
+                if not user.text.strip():raise ValueError("Логин не может быть пустым")
                 self.app.data["username"]=user.text.strip()
                 if pw.text:self.app.data["password_hash"]=hashlib.sha256(pw.text.encode()).hexdigest()
-                self.app.save_settings(); self.refresh(); self.set_status("Настройки админ-панели сохранены")
+                self.app.save_settings();self.refresh();self.set_status("Настройки сохранены")
             except Exception as e:self.set_status("Ошибка настроек: "+str(e))
-        save.bind(on_release=apply); pop.open()
+        save.bind(on_release=apply);pop.open()
 
 class MazdaAndroidApp(App):
     def build(self):
