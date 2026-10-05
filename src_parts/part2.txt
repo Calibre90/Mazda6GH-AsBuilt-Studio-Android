@@ -43,14 +43,20 @@ class Main(BoxLayout):
                 raw=norm(r.get("value","")); pos=self.changed_positions.get(r["address"],set()); rendered=""
                 for i,ch in enumerate(raw): rendered += (f'[color=ff3333][b]{ch}[/b][/color]' if i in pos else ch); rendered += (" " if i%4==3 else "")
                 addr=r["address"]
-                row=BoxLayout(size_hint_y=None,height=dp(48),spacing=dp(0)); row.add_widget(Label(text=f'[b]{addr}[/b]',markup=True,size_hint_x=.30,font_name="Roboto",font_size="15sp",halign="left")); row.add_widget(Label(text=rendered.strip(),markup=True,size_hint_x=.70,font_name="Roboto",font_size="16sp",halign="left")); content.add_widget(row)
+                row=GridLayout(cols=2,size_hint_y=None,height=dp(48),spacing=dp(1)); a=Button(text=addr,size_hint_x=.30,font_name="Roboto",font_size="15sp",disabled=True); a.disabled_color=(1,1,1,1); v=Button(text=rendered.strip(),markup=True,size_hint_x=.70,font_name="Roboto",font_size="16sp",disabled=True); v.disabled_color=(1,1,1,1); row.add_widget(a); row.add_widget(v); content.add_widget(row)
             scroll.add_widget(content);ti.add_widget(scroll);tabs.add_widget(ti)
         self.tabholder.add_widget(tabs)
         if keep_tab:
-            target=next((t for t in tabs.tab_list if t.text==keep_tab),None)
-            if target: tabs.switch_to(target); self.active_module_id=keep_tab
+            from kivy.clock import Clock
+            Clock.schedule_once(lambda _dt, k=keep_tab: self._restore_tab(k), 0)
     def _remember_tab(self,tab_id):
         self.active_module_id=tab_id
+    def _restore_tab(self,tab_id):
+        if not self.tabs: return
+        target=next((t for t in self.tabs.tab_list if t.text==tab_id),None)
+        if target:
+            self.tabs.switch_to(target)
+            self.active_module_id=tab_id
     def feature_state(self,f):
         r=next((x for x in self.app.data["rows"] if x.get("module")==f.get("module") and x.get("address")==f.get("row")),None)
         if not r:return False
