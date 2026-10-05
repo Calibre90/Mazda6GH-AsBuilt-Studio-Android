@@ -59,10 +59,10 @@ def parse_abt(text,modules):
     parsed=[]; by_addr={str(m.get("address","")).upper():m.get("id","IC") for m in modules}; current=None
     for source in text.splitlines():
         line=source.strip().lstrip("﻿")
-        bm=re.match(r"^;s*Blocks+(d+)",line,re.I)
+        bm=re.match(r"^;[ ]*Block[ ]+([0-9]+)",line,re.I)
         if bm: current=int(bm.group(1)); continue
         if not line or line.startswith((";","#","//")): continue
-        m=re.match(r"^([0-9A-Fa-f]{3})([0-9A-Za-z]{2})([0-9A-Za-z]{2})([0-9A-Fa-f]+)$",line) or re.match(r"^([0-9A-Fa-f]{3})[- ]([0-9A-Za-z]{2})[- ]([0-9A-Za-z]{2})s+([0-9A-Fa-f ]+)$",line)
+        m=re.match(r"^([0-9A-Fa-f]{3})([0-9A-Za-z]{2})([0-9A-Za-z]{2})([0-9A-Fa-f]+)$",line) or re.match(r"^([0-9A-Fa-f]{3})[- ]([0-9A-Za-z]{2})[- ]([0-9A-Za-z]{2})[ ]+([0-9A-Fa-f][0-9A-Fa-f ]*)$",line)
         if not m: continue
         try: bn=decode_abt_index(m.group(2)); ln=decode_abt_index(m.group(3))
         except: continue
