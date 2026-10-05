@@ -9,10 +9,13 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+      - name: Assemble full V2.4 source
+        run: cat source_parts/00.py.part source_parts/01.py.part source_parts/02.py.part > main.py
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - run: pip install -r requirements-dev.txt
+      - run: python -m py_compile main.py
       - run: pytest -q
 
   build:
@@ -22,11 +25,13 @@ jobs:
       image: ghcr.io/kivy/buildozer:latest
     steps:
       - uses: actions/checkout@v4
+      - name: Assemble full V2.4 source
+        run: cat source_parts/00.py.part source_parts/01.py.part source_parts/02.py.part > main.py
       - name: Build debug APK
         run: printf 'y\n' | buildozer android debug
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mazda6GH-AsBuilt-Studio-Android-V2.4-APK
+          name: Mazda6GH-AsBuilt-Studio-Android-V2.4-FULL-APK
           path: bin/*.apk
           if-no-files-found: error
