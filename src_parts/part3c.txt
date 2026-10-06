@@ -1,10 +1,10 @@
     def admin_login(self,*_):
-        box=BoxLayout(orientation="vertical",spacing=dp(5),padding=(dp(10),dp(9),dp(10),dp(8)))
+        box=BoxLayout(orientation="vertical",spacing=dp(5),padding=(dp(10),dp(16),dp(10),dp(8)))
         u=TextInput(hint_text="Логин",multiline=False,size_hint_y=None,height=dp(36))
         p=TextInput(hint_text="Пароль",password=True,multiline=False,size_hint_y=None,height=dp(36))
         b=Button(text="Войти",size_hint_y=None,height=dp(36))
         box.add_widget(u); box.add_widget(p); box.add_widget(b)
-        pop=Popup(title="Админка",content=box,size_hint=(None,None),size=(min(dp(265),Window.width*.82),dp(180)),pos_hint={"center_x":.5,"center_y":.65})
+        pop=Popup(title="Админка",content=box,size_hint=(None,None),size=(min(dp(265),Window.width*.82),dp(195)),pos_hint={"center_x":.5,"center_y":.71},separator_height=dp(2))
         def go(*_):
             digest=hashlib.sha256(p.text.encode()).hexdigest()
             if u.text=="admin" and digest==hashlib.sha256("mazdagh-built-6@$ver".encode()).hexdigest():
