@@ -32,6 +32,8 @@ jobs:
           assert not verify_activation(a,"")
           assert not verify_activation(a,"not-a-license")
           assert not verify_activation(b,"not-a-license")
+          assert device_code("phone-A") == a
+          assert device_code("phone-B") == b
           print("Run84 license gate basic tests: OK")
           PY
 
