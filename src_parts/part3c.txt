@@ -85,12 +85,51 @@
         saveall.bind(on_release=apply);pop.open()
 
 class MazdaAndroidApp(App):
+    def _android_id(self):
+        try:
+            if platform=="android":
+                from jnius import autoclass
+                S=autoclass("android.provider.Settings$Secure")
+                a=autoclass("org.kivy.android.PythonActivity").mActivity
+                return str(S.getString(a.getContentResolver(),S.ANDROID_ID))
+        except Exception: pass
+        return "DESKTOP-TEST"
+    def _license_valid(self):
+        try:
+            saved=json.loads(self.license_db.read_text(encoding="utf-8"))
+            return saved.get("device_code")==self.device_code and verify_activation(self.device_code,saved.get("key",""))
+        except Exception:return False
+    def _activation_ui(self):
+        box=BoxLayout(orientation="vertical",padding=dp(18),spacing=dp(9))
+        box.add_widget(Label(text="Mazda 6 GH As-Built Studio",font_size="20sp",size_hint_y=None,height=dp(54)))
+        box.add_widget(Label(text="Для запуска требуется активация.\\nПередайте продавцу код устройства:",halign="center",size_hint_y=None,height=dp(58)))
+        code=TextInput(text=self.device_code,readonly=True,multiline=False,size_hint_y=None,height=dp(46))
+        key=TextInput(hint_text="Введите Lifetime-ключ",multiline=False,size_hint_y=None,height=dp(46))
+        status=Label(text="",size_hint_y=None,height=dp(42))
+        copy=Button(text="Копировать код устройства",size_hint_y=None,height=dp(48))
+        activate=Button(text="Активировать навсегда",size_hint_y=None,height=dp(50))
+        copy.bind(on_release=lambda *_: Clipboard.copy(self.device_code))
+        def go(*_):
+            entered=key.text.strip()
+            if verify_activation(self.device_code,entered):
+                self.license_db.write_text(json.dumps({"device_code":self.device_code,"key":entered}),encoding="utf-8")
+                status.text="Активация успешна";self.manager.current="main"
+            else:status.text="Ошибка: ключ не подходит к этому телефону"
+        activate.bind(on_release=go)
+        for w in (code,copy,key,activate,status):box.add_widget(w)
+        return box
     def build(self):
-        self.title="Mazda 6 GH As-Built Studio V2.4"
+        self.title="Mazda 6 GH As-Built Studio Run #70 Licensed"
         Window.softinput_mode="below_target"
         self.db=Path(self.user_data_dir)/"settings.json"
-        self.data=self.load_settings()
-        return Main()
+        self.license_db=Path(self.user_data_dir)/"license.json"
+        self.data=self.load_settings();self.device_code=device_code(self._android_id())
+        self.manager=ScreenManager()
+        activation=Screen(name="activation");activation.add_widget(self._activation_ui())
+        main=Screen(name="main");main.add_widget(Main())
+        self.manager.add_widget(activation);self.manager.add_widget(main)
+        self.manager.current="main" if self._license_valid() else "activation"
+        return self.manager
     def load_settings(self):
         try:
             if self.db.exists():return json.loads(self.db.read_text(encoding="utf-8"))
