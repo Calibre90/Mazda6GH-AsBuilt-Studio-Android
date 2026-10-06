@@ -20,6 +20,7 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.utils import platform
 from kivy.core.clipboard import Clipboard
 from kivy.graphics import Color, Rectangle
+from license_core import device_code, verify_activation
 
 DEFAULT={
  "ui":{"title":"Mazda6GH-AsBuilt-Studio","background":"#f2f2f2","panel":"#fff7f2","width":590,"height":390,"feature_columns":2,"open_text":"Open As-Built file","save_text":"Save As-Built file","admin_text":"⚙","author_text":"КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)","link1_text":"","link1_url":"","link2_text":"","link2_url":"","ready_text":"Готово"},
