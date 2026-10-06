@@ -1,10 +1,10 @@
 [app]
-title = Mazda 6 GH As-Built Studio
-package.name = mazda6ghasbuilt
+title = M6GH Run84 License Admin
+package.name = m6ghrun84licenseadmin
 package.domain = org.d3dimone
 source.dir = .
 source.include_exts = py,png,jpg,jpeg,json,abt,txt,kv
-version = 2.4
+version = 84.0
 requirements = python3,kivy,pyjnius
 orientation = portrait
 fullscreen = 0
