@@ -1,0 +1,41 @@
+name: Build Run84 License Admin
+on:
+  workflow_dispatch:
+  push:
+    branches: [run84-license-admin-v1]
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container: ghcr.io/kivy/buildozer:latest
+    env:
+      RUN22_LICENSE_SECRET: ${{ secrets.RUN22_LICENSE_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare admin
+        run: |
+          test -n "$RUN22_LICENSE_SECRET"
+          cp admin_run84.py main.py
+          cp license_core_v3.py license_core.py
+          python3 - <<'PY'
+          import os
+          s=os.environ["RUN22_LICENSE_SECRET"]
+          open("license_secret.py","w",encoding="utf-8").write("LICENSE_SECRET="+repr(s.encode("utf-8"))+"\n")
+          PY
+          sed -i 's/^title = .*/title = M6GH Run84 License Admin/' buildozer.spec
+          sed -i 's/^package.name = .*/package.name = m6ghrun84admin/' buildozer.spec
+          sed -i 's/^package.domain = .*/package.domain = org.d3dimone/' buildozer.spec
+          python3 -m py_compile main.py license_core.py license_secret.py
+      - name: Build APK
+        run: printf 'y\n' | buildozer android debug
+      - name: Rename APK
+        run: |
+          mkdir -p out
+          APK=$(find bin -maxdepth 1 -name '*.apk' | head -1)
+          test -n "$APK"
+          cp "$APK" out/M6GH-Run84-License-Admin.apk
+          sha256sum out/M6GH-Run84-License-Admin.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: M6GH-Run84-License-Admin
+          path: out/M6GH-Run84-License-Admin.apk
+          if-no-files-found: error
