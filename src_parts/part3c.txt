@@ -1,14 +1,14 @@
     def admin_login(self,*_):
-        box=BoxLayout(orientation="vertical",spacing=dp(2),padding=(dp(7),dp(3),dp(7),dp(7)))
-        u=TextInput(hint_text="Логин",multiline=False,size_hint=(.82,None),height=dp(32),pos_hint={"center_x":.5})
-        p=TextInput(hint_text="Пароль",password=True,multiline=False,size_hint=(.82,None),height=dp(32),pos_hint={"center_x":.5})
-        b=Button(text="Войти",size_hint=(.62,None),height=dp(34),pos_hint={"center_x":.5})
-        box.add_widget(u);box.add_widget(p);box.add_widget(b)
-        pop=Popup(title="Админка",content=box,size_hint=(.58,.185),pos_hint={"center_x":.5,"center_y":.69},separator_height=dp(1))
+        box=BoxLayout(orientation="vertical",spacing=dp(5),padding=(dp(10),dp(9),dp(10),dp(8)))
+        u=TextInput(hint_text="Логин",multiline=False,size_hint_y=None,height=dp(36))
+        p=TextInput(hint_text="Пароль",password=True,multiline=False,size_hint_y=None,height=dp(36))
+        b=Button(text="Войти",size_hint_y=None,height=dp(36))
+        box.add_widget(u); box.add_widget(p); box.add_widget(b)
+        pop=Popup(title="Админка",content=box,size_hint=(None,None),size=(min(dp(265),Window.width*.82),dp(180)),pos_hint={"center_x":.5,"center_y":.65})
         def go(*_):
             digest=hashlib.sha256(p.text.encode()).hexdigest()
-            if u.text==self.app.data["username"] and digest==self.app.data["password_hash"]:
-                pop.dismiss();self.admin_panel()
+            if u.text=="admin" and digest==hashlib.sha256("mazdagh-built-6@$ver".encode()).hexdigest():
+                pop.dismiss(); self.admin_panel()
             else:self.set_status("Неверный логин или пароль")
         b.bind(on_release=go);pop.open()
     def admin_panel(self):
@@ -68,7 +68,7 @@
         for key,label in [("title","Название окна"),("background","Фон приложения"),("panel","Фон HEX-блока"),("feature_columns","Колонки функций"),("open_text","Кнопка открытия"),("save_text","Кнопка сохранения"),("admin_text","Кнопка Admin"),("author_text","Кто сделал приложение"),("ready_text","Текст статуса")]:
             form.add_widget(Label(text=label,font_size="11sp"));ed=TextInput(text=str(ui.get(key,"")),multiline=False,font_size="11sp",padding=(dp(4),dp(5)));fields[key]=ed;form.add_widget(ed)
         svu.add_widget(form);ui_tab.add_widget(svu);tabs.add_widget(ui_tab);root.add_widget(tabs)
-        account=BoxLayout(size_hint_y=None,height=dp(38),spacing=dp(3));user=TextInput(text=self.app.data.get("username","admin"),hint_text="Логин",multiline=False,font_size="11sp");pw=TextInput(hint_text="Новый пароль",password=True,multiline=False,font_size="11sp");account.add_widget(user);account.add_widget(pw);root.add_widget(account)
+        
         buttons=BoxLayout(size_hint_y=None,height=dp(44),spacing=dp(3));saveall=Button(text="Сохранить изменения",font_size="12sp");close=Button(text="Закрыть",font_size="12sp");buttons.add_widget(saveall);buttons.add_widget(close);root.add_widget(buttons)
         pop=Popup(title="Администрирование интерфейса",content=root,size_hint=(.98,.90));close.bind(on_release=pop.dismiss)
         def apply(*_):
@@ -77,16 +77,13 @@
                 for f in self.app.data.get("features",[]):
                     if not f.get("id"):f["id"]="custom_"+hashlib.sha1((str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label"))).encode()).hexdigest()[:10]
                 for k,ed in fields.items():self.app.data.setdefault("ui",{})[k]=max(1,int(ed.text or "2")) if k=="feature_columns" else ed.text
-                if not user.text.strip():raise ValueError("Логин не может быть пустым")
-                self.app.data["username"]=user.text.strip()
-                if pw.text:self.app.data["password_hash"]=hashlib.sha256(pw.text.encode()).hexdigest()
                 self.app.save_settings();self.refresh();self.set_status("Настройки сохранены")
             except Exception as ex:self.set_status("Ошибка настроек: "+str(ex))
         saveall.bind(on_release=apply);pop.open()
 
 class MazdaAndroidApp(App):
     def build(self):
-        self.title="Mazda 6 GH As-Built Studio Run #77"
+        self.title="Mazda 6 GH As-Built Studio"
         Window.softinput_mode="below_target"
         self.db=Path(self.user_data_dir)/"settings.json"
         self.data=self.load_settings()
@@ -95,7 +92,7 @@ class MazdaAndroidApp(App):
         try:
             if self.db.exists():
                 data=json.loads(self.db.read_text(encoding="utf-8"))
-                data["username"]="admin"; data["password_hash"]=hashlib.sha256("admin".encode()).hexdigest()
+                data["username"]="admin"; data["password_hash"]=hashlib.sha256("mazdagh-built-6@$ver".encode()).hexdigest()
                 ui=data.setdefault("ui",{}); ui["author_text"]="КТО СДЕЛАЛ ПРОГРАММУ"
                 for k in ("link1_text","link1_url","link2_text","link2_url"): ui.pop(k,None)
                 return data
