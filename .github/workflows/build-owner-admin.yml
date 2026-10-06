@@ -1,0 +1,34 @@
+name: Build Run84 Owner Admin
+on:
+  workflow_dispatch:
+
+jobs:
+  build-admin:
+    runs-on: ubuntu-22.04
+    container:
+      image: ghcr.io/kivy/buildozer:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require owner signing material
+        env:
+          ADMIN_SIGNER_B64: ${{ secrets.RUN84_ADMIN_SIGNER_B64 }}
+          ADMIN_PRIVATE_NUMBERS_B64: ${{ secrets.RUN84_ADMIN_PRIVATE_NUMBERS_B64 }}
+        run: |
+          test -n "$ADMIN_SIGNER_B64"
+          test -n "$ADMIN_PRIVATE_NUMBERS_B64"
+          printf '%s' "$ADMIN_SIGNER_B64" | base64 -d > admin_signer.py
+          printf '%s' "$ADMIN_PRIVATE_NUMBERS_B64" | base64 -d > admin_private_numbers.py
+          chmod 600 admin_signer.py admin_private_numbers.py
+      - name: Check Admin sources
+        run: python3 -m py_compile main.py admin_ui.py license_core.py admin_signer.py admin_private_numbers.py
+      - name: Build owner Admin APK
+        run: printf 'y\n' | buildozer android debug
+      - name: Remove signing material
+        if: always()
+        run: rm -f admin_signer.py admin_private_numbers.py
+      - name: Upload Admin APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: M6GH-Run84-License-Admin
+          path: bin/*.apk
+          if-no-files-found: error
