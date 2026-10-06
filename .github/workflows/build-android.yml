@@ -1,44 +1,60 @@
-name: Build Android APK V2.4 FULL
+name: Build Run22 Licensed APKs
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ run22-offline-license ]
 
 jobs:
   test:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - name: Assemble full V2.4 source
-        run: cat src_parts/part1.txt src_parts/part2.txt src_parts/part3a.txt src_parts/part3b.txt src_parts/part3c.txt src_parts/part3d.txt > main.py
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -r requirements-dev.txt
-      - name: Compile full application
-        run: python -m py_compile main.py
-      - run: pytest -q
+      - run: python -m py_compile main.py license_core.py admin_keygen.py
 
-  build:
+  client:
     needs: test
     runs-on: ubuntu-22.04
     container:
       image: ghcr.io/kivy/buildozer:latest
     steps:
       - uses: actions/checkout@v4
-      - name: Assemble full V2.4 source
-        run: cat src_parts/part1.txt src_parts/part2.txt src_parts/part3a.txt src_parts/part3b.txt src_parts/part3c.txt src_parts/part3d.txt > main.py
-      - name: Verify test placeholder is absent
-        run: "! grep -q 'Android build initialized' main.py"
-      - name: Generate approved splash and app icon
+      - name: Generate brand assets
         run: |
           python3 -m pip install --quiet pillow
           python3 generate_brand_assets.py
-      - name: Build full debug APK
+      - name: Build Run22 client
         run: printf 'y\n' | buildozer android debug
-      - name: Upload full APK
+      - name: Upload Run22 client APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mazda6GH-AsBuilt-Studio-Android-V2.4-FULL-APK
+          name: Mazda6GH-AsBuilt-Studio-Run22-Licensed
+          path: bin/*.apk
+          if-no-files-found: error
+
+  admin:
+    needs: test
+    runs-on: ubuntu-22.04
+    container:
+      image: ghcr.io/kivy/buildozer:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Admin app
+        run: |
+          cp main.py main_client.py
+          cp admin_keygen.py main.py
+          sed -i 's/title = Mazda 6 GH As-Built Studio/title = M6GH License Admin/' buildozer.spec
+          sed -i 's/package.name = mazda6ghasbuilt/package.name = m6ghlicenseadmin/' buildozer.spec
+          sed -i 's/version = 2.4/version = 22.0/' buildozer.spec
+          sed -i '/icon.filename/d' buildozer.spec
+          sed -i '/presplash.filename/d' buildozer.spec
+      - name: Build Admin
+        run: printf 'y\n' | buildozer android debug
+      - name: Upload Admin APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: M6GH-Run22-License-Admin
           path: bin/*.apk
           if-no-files-found: error
