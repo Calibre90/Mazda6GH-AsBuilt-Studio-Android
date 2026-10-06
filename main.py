@@ -19,6 +19,7 @@ from kivy.uix.widget import Widget
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.utils import platform
 from kivy.core.clipboard import Clipboard
+from license_core import device_code, verify_activation
 
 DEFAULT={
  "ui":{"title":"Mazda 6 GH As-Built Studio","author_text":"Кто сделал приложение","link1_text":"Ссылка 1","link1_url":"","link2_text":"Ссылка 2","link2_url":""},
@@ -75,11 +76,52 @@ def parse_abt(text,modules):
 # keeps the core parser/build entrypoint available while the remaining UI
 # source is transferred without binary-artifact coupling.
 class MazdaAndroidApp(App):
+    def _android_id(self):
+        try:
+            if platform=="android":
+                from jnius import autoclass
+                S=autoclass("android.provider.Settings$Secure")
+                a=autoclass("org.kivy.android.PythonActivity").mActivity
+                return str(S.getString(a.getContentResolver(),S.ANDROID_ID))
+        except Exception: pass
+        return "DESKTOP-TEST"
+    def _valid(self):
+        try:
+            saved=json.loads(self.license_db.read_text(encoding="utf-8"))
+            return saved.get("device_code")==self.device_code and verify_activation(self.device_code,saved.get("key",""))
+        except Exception: return False
+    def _activation(self):
+        box=BoxLayout(orientation="vertical",padding=dp(18),spacing=dp(9))
+        box.add_widget(Label(text="Mazda 6 GH As-Built Studio",font_size="20sp",size_hint_y=None,height=dp(54)))
+        box.add_widget(Label(text="Для запуска требуется активация.\nПередайте продавцу код устройства:",halign="center",size_hint_y=None,height=dp(58)))
+        code=TextInput(text=self.device_code,readonly=True,multiline=False,size_hint_y=None,height=dp(46))
+        key=TextInput(hint_text="Введите Lifetime-ключ",multiline=False,size_hint_y=None,height=dp(46))
+        status=Label(text="",size_hint_y=None,height=dp(42))
+        copy=Button(text="Копировать код устройства",size_hint_y=None,height=dp(48))
+        activate=Button(text="Активировать навсегда",size_hint_y=None,height=dp(50))
+        copy.bind(on_release=lambda *_: Clipboard.copy(self.device_code))
+        def go(*_):
+            entered=key.text.strip()
+            if verify_activation(self.device_code,entered):
+                self.license_db.write_text(json.dumps({"device_code":self.device_code,"key":entered}),encoding="utf-8")
+                status.text="Активация успешна"; self.manager.current="main"
+            else: status.text="Ошибка: ключ не подходит к этому телефону"
+        activate.bind(on_release=go)
+        for w in (code,copy,key,activate,status): box.add_widget(w)
+        return box
     def build(self):
-        self.title="Mazda 6 GH As-Built Studio V2.4"
+        self.title="Mazda 6 GH As-Built Studio Run #70 Licensed"
+        self.license_db=Path(self.user_data_dir)/"license.json"
+        self.device_code=device_code(self._android_id())
+        self.manager=ScreenManager()
+        activation=Screen(name="activation"); activation.add_widget(self._activation())
+        main=Screen(name="main")
         root=BoxLayout(orientation="vertical",padding=dp(12),spacing=dp(8))
-        root.add_widget(Label(text="[b]Mazda 6 GH As-Built Studio V2.4[/b]",markup=True))
-        root.add_widget(Label(text="Android build initialized.\nABT parser and checksum core are active."))
-        return root
+        root.add_widget(Label(text="Mazda 6 GH As-Built Studio"))
+        root.add_widget(Label(text="Run #70 Licensed\nABT parser and checksum core are active."))
+        main.add_widget(root)
+        self.manager.add_widget(activation); self.manager.add_widget(main)
+        self.manager.current="main" if self._valid() else "activation"
+        return self.manager
 
 if __name__=="__main__": MazdaAndroidApp().run()
