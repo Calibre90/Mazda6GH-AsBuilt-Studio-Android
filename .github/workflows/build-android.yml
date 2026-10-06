@@ -1,4 +1,4 @@
-name: Build Run84 Licensed APK
+name: Build Run84 Licensed APKs
 on:
   workflow_dispatch:
   push:
@@ -15,6 +15,18 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m py_compile main.py license_core.py
+      - name: Run84 license verifier tests
+        run: |
+          python - <<'PY'
+          from license_core import device_code, verify_activation
+          a=device_code("phone-A")
+          b=device_code("phone-B")
+          assert a != b
+          assert not verify_activation(a,"")
+          assert not verify_activation(a,"not-a-license")
+          assert not verify_activation(b,"not-a-license")
+          print("Run84 license gate basic tests: OK")
+          PY
 
   client:
     needs: test
