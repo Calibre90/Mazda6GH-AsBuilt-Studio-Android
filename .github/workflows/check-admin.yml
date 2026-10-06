@@ -1,0 +1,27 @@
+name: Check Run84 License Admin
+on:
+  workflow_dispatch:
+  push:
+    branches: [ run84-license-admin ]
+
+jobs:
+  check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Syntax check public Admin sources
+        run: python -m py_compile main.py admin_ui.py license_core.py
+      - name: Ensure production private material is absent
+        run: |
+          test ! -f run84_private.pem
+          test ! -f admin_private_key.py
+          test ! -f admin_signer.py
+          ! grep -R --exclude='*.md' -E 'BEGIN (RSA )?PRIVATE KEY|PRIVATE_EXPONENT|RSA_D[[:space:]]*=' .
+      - name: Verify standalone Admin configuration
+        run: |
+          grep -q 'package.name = m6ghrun84licenseadmin' buildozer.spec
+          grep -q 'requirements = python3,kivy' buildozer.spec
+          grep -q 'from admin_ui import LicenseAdminApp' main.py
