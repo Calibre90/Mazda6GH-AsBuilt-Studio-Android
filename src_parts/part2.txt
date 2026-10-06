@@ -2,7 +2,7 @@ class Main(BoxLayout):
     status=StringProperty("Готово")
     def __init__(self,**kw):
         super().__init__(orientation="vertical",spacing=dp(3),padding=(dp(7),dp(28),dp(7),dp(7)),**kw); self.app=App.get_running_app(); self.changed={}; self.changed_positions={}; self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data.get("rows",[])}; self.tabs=None; self.pending_save_module=None; self.active_module_id=self.app.data.get("modules",[{"id":"IC"}])[0].get("id","IC"); self.feature_active={}; self.feature_baselines={}; self.row_feature_baselines={}
-        self.header=BoxLayout(size_hint_y=None,height=dp(42),spacing=dp(5)); self.title_label=Label(text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"),font_size="13sp",halign="right"); self.header.add_widget(self.title_label); self.header_links=BoxLayout(size_hint_x=.42,spacing=dp(2)); self.header.add_widget(self.header_links)
+        self.header=BoxLayout(size_hint_y=None,height=dp(42),spacing=dp(5)); self.title_label=Label(text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"),font_size="13sp",halign="right"); self.header.add_widget(self.title_label); self.header_links=BoxLayout(size_hint_x=None,width=dp(92),spacing=dp(2)); self.header.add_widget(self.header_links)
         ab=Button(text=self.app.data.get("ui",{}).get("admin_text","⚙"),size_hint_x=None,width=dp(52)); ab.bind(on_release=self.admin_login); self.header.add_widget(ab); self.add_widget(self.header)
         self.tabholder=BoxLayout(); self.add_widget(self.tabholder)
         bar=BoxLayout(size_hint_y=None,height=dp(52),spacing=dp(5)); ui=self.app.data.get("ui",{}); ob=Button(text=ui.get("open_text","Open As-Built file")); sb=Button(text=ui.get("save_text","Save As-Built file")); ob.bind(on_release=self.open_document); sb.bind(on_release=self.save_document); bar.add_widget(ob);bar.add_widget(sb);self.add_widget(bar)
@@ -10,11 +10,10 @@ class Main(BoxLayout):
         self.stat=Label(text=self.status,size_hint_y=None,height=dp(28),font_size="12sp"); self.add_widget(self.stat); self.refresh()
     def set_status(self,s): self.status=s; self.stat.text=s
     def refresh_author(self):
-        self.author_bar.clear_widgets(); self.header_links.clear_widgets(); ui=self.app.data.get("ui",{})
-        for n in (1,2):
-            label=ui.get(f"link{n}_text",""); url=ui.get(f"link{n}_url","")
-            if label:
-                b=Button(text=label,font_size="9sp",padding=(dp(2),dp(2))); b.bind(on_release=lambda _b,u=url:self.open_url(u)); self.header_links.add_widget(b)
+        self.author_bar.clear_widgets(); self.header_links.clear_widgets()
+        b=Button(text="Dim304",font_size="11sp",padding=(dp(2),dp(2)))
+        b.bind(on_release=lambda _b:self.open_url("https://www.drive2.ru/users/dim304"))
+        self.header_links.add_widget(b)
     def open_url(self,url):
         if not url:return
         try:
@@ -26,7 +25,7 @@ class Main(BoxLayout):
         except Exception as e:self.set_status("Не удалось открыть ссылку: "+str(e))
     def refresh(self):
         keep_tab=self.active_module_id
-        self.title_label.text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"); self.refresh_author(); self.tabholder.clear_widgets(); mods=self.app.data.get("modules",[]); tab_w=min(dp(68),(Window.width-dp(14))/max(1,len(mods))); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36),tab_width=tab_w); self.tabs=tabs
+        self.title_label.text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ"); self.refresh_author(); self.tabholder.clear_widgets(); mods=self.app.data.get("modules",[]); tab_w=min(dp(68),(Window.width-dp(14))/max(1,len(mods))); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36),tab_width=tab_w); self.tabs=tabs
         for m in self.app.data["modules"]:
             ti=TabbedPanelItem(text=m["id"],font_size="11sp"); ti.bind(on_release=lambda tab:self._remember_tab(tab.text)); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(5),padding=dp(5)); content.bind(minimum_height=content.setter("height"))
             content.add_widget(Label(text=f'[b]{m.get("name")}[/b]  || ID: {m.get("address")} || Ver.: {m.get("version","1")}',markup=True,size_hint_y=None,height=dp(36),halign="left",valign="middle",font_size="12sp",shorten=True,shorten_from="right"))
@@ -36,7 +35,7 @@ class Main(BoxLayout):
                 grid=GridLayout(cols=cols,size_hint_y=None,spacing=dp(2),row_default_height=dp(38),row_force_default=True)
                 grid.bind(minimum_height=grid.setter("height"))
                 for f in feats:
-                    line=BoxLayout(size_hint_y=None,height=dp(38),spacing=0); cb=CheckBox(size_hint_x=None,width=dp(30)); fk=f.get("id") or (str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label"))); cb.active=bool(self.feature_active.get(fk,False)); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); line.add_widget(Label(text=f.get("label",""),halign="left",font_size="12sp",padding=(0,0))); grid.add_widget(line)
+                    line=BoxLayout(size_hint_y=None,height=dp(38),spacing=0); cb=CheckBox(size_hint_x=None,width=dp(30)); fk=f.get("id") or (str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label"))); cb.active=bool(self.feature_active.get(fk,False)); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); lbl=Label(text=f.get("label",""),halign="left",valign="middle",font_size="12sp",padding=(dp(2),0)); lbl.bind(size=lambda inst,val:setattr(inst,"text_size",(val[0],None))); line.add_widget(lbl); grid.add_widget(line)
                 content.add_widget(grid)
             
             for r in [x for x in self.app.data["rows"] if x.get("module")==m["id"]]:
