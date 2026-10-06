@@ -28,16 +28,15 @@ class Main(BoxLayout):
         self.title_label.text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ"); self.refresh_author(); self.tabholder.clear_widgets(); mods=self.app.data.get("modules",[]); tab_w=min(dp(68),(Window.width-dp(14))/max(1,len(mods))); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36),tab_width=tab_w); self.tabs=tabs
         for m in self.app.data["modules"]:
             ti=TabbedPanelItem(text=m["id"],font_size="11sp"); ti.bind(on_release=lambda tab:self._remember_tab(tab.text)); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(5),padding=dp(5)); content.bind(minimum_height=content.setter("height"))
-            info=Label(text=f'[b]{m.get("name")}[/b]  | ID: {m.get("address")} | Ver.: {m.get("version","1")}',markup=True,size_hint_y=None,height=dp(44),halign="left",valign="middle",font_size="11sp",padding=(dp(8),dp(3))); info.bind(size=lambda inst,val:setattr(inst,"text_size",(max(dp(10),val[0]-dp(16)),None))); info.bind(pos=lambda inst,_:None); info.canvas.before.add(Color(.23,.23,.23,1)); info_bg=Rectangle(pos=info.pos,size=info.size); info.canvas.before.add(info_bg); info.bind(pos=lambda inst,_:setattr(info_bg,"pos",inst.pos),size=lambda inst,_:setattr(info_bg,"size",inst.size)); content.add_widget(info)
+            info=Button(text=f'[b]{m.get("name")}[/b]  | ID: {m.get("address")} | Ver.: {m.get("version","1")}',markup=True,size_hint_y=None,height=dp(44),halign="left",valign="middle",font_size="11sp",padding=(dp(8),dp(3)),disabled=True); info.disabled_color=(1,1,1,1); info.bind(size=lambda inst,val:setattr(inst,"text_size",(max(dp(10),val[0]-dp(16)),None))); content.add_widget(info)
             feats=[x for x in self.app.data["features"] if x.get("module")==m["id"]]
             if feats:
                 cols=max(1,int(self.app.data.get("ui",{}).get("feature_columns",2)))
                 grid=GridLayout(cols=cols,size_hint_y=None,spacing=dp(1),row_default_height=dp(34),row_force_default=True)
                 grid.bind(minimum_height=grid.setter("height"))
                 for f in feats:
-                    line=BoxLayout(size_hint_y=None,height=dp(34),spacing=0); cb=CheckBox(size_hint_x=None,width=dp(30)); fk=f.get("id") or (str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label"))); actual=self.feature_state(f); self.feature_active[fk]=actual if fk not in self.feature_active else self.feature_active[fk]; cb.active=bool(self.feature_active[fk]); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); lbl=Label(text=f.get("label",""),halign="left",valign="middle",font_size="11sp",padding=(dp(2),0)); lbl.bind(size=lambda inst,val:setattr(inst,"text_size",(max(dp(10),val[0]-dp(4)),val[1]))); line.add_widget(lbl); line.canvas.before.add(Color(.23,.23,.23,1)); cell_bg=Rectangle(pos=line.pos,size=line.size); line.canvas.before.add(cell_bg); line.bind(pos=lambda inst,_,bg=cell_bg:setattr(bg,"pos",inst.pos),size=lambda inst,_,bg=cell_bg:setattr(bg,"size",inst.size)); grid.add_widget(line)
+                    line=BoxLayout(size_hint_y=None,height=dp(34),spacing=0); cb=CheckBox(size_hint_x=None,width=dp(30)); fk=f.get("id") or (str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label"))); actual=self.feature_state(f); self.feature_active[fk]=actual if fk not in self.feature_active else self.feature_active[fk]; cb.active=bool(self.feature_active[fk]); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); lbl=Button(text=f.get("label",""),halign="left",valign="middle",font_size="11sp",padding=(dp(2),0),disabled=True); lbl.disabled_color=(1,1,1,1); lbl.bind(size=lambda inst,val:setattr(inst,"text_size",(max(dp(10),val[0]-dp(4)),val[1]))); line.add_widget(lbl); grid.add_widget(line)
                 content.add_widget(grid)
-            
             for r in [x for x in self.app.data["rows"] if x.get("module")==m["id"]]:
                 raw=norm(r.get("value","")); pos=set(self.changed_positions.get(r["address"],set()));
                 for ff in feats:
@@ -56,69 +55,47 @@ class Main(BoxLayout):
         if keep_tab:
             from kivy.clock import Clock
             Clock.schedule_once(lambda _dt, k=keep_tab: self._restore_tab(k), 0)
-    def _remember_tab(self,tab_id):
-        self.active_module_id=tab_id
+    def _remember_tab(self,tab_id): self.active_module_id=tab_id
     def _restore_tab(self,tab_id):
-        if not self.tabs: return
+        if not self.tabs:return
         target=next((t for t in self.tabs.tab_list if t.text==tab_id),None)
-        if target:
-            self.tabs.switch_to(target)
-            self.active_module_id=tab_id
+        if target:self.tabs.switch_to(target);self.active_module_id=tab_id
     def feature_state(self,f):
         r=next((x for x in self.app.data["rows"] if x.get("module")==f.get("module") and x.get("address")==f.get("row")),None)
         if not r:return False
-        raw=norm(r.get("value","")); mode=str(f.get("mode","HEX")).upper()
+        raw=norm(r.get("value",""));mode=str(f.get("mode","HEX")).upper()
         try:
             if mode=="BITS":
-                bi=int(f.get("byte_index",0)); bits=parse_indices(f.get("bits","")); bv=int(raw[bi*2:bi*2+2],16); return bool(bits) and all(bv&(1<<b) for b in bits)
-            idx=parse_indices(f.get("hex_indices",0)); target=norm(f.get("on","")); return bool(idx) and len(idx)==len(target) and all(i<len(raw) and raw[i]==target[n] for n,i in enumerate(idx))
+                bi=int(f.get("byte_index",0));bits=parse_indices(f.get("bits",""));bv=int(raw[bi*2:bi*2+2],16);return bool(bits) and all(bv&(1<<b) for b in bits)
+            idx=parse_indices(f.get("hex_indices",0));target=norm(f.get("on",""));return bool(idx) and len(idx)==len(target) and all(i<len(raw) and raw[i]==target[n] for n,i in enumerate(idx))
         except:return False
     def toggle(self,f,active):
-        self.active_module_id=f.get("module",self.active_module_id)
-        r=next((x for x in self.app.data["rows"] if x.get("module")==f.get("module") and x.get("address")==f.get("row")),None)
+        self.active_module_id=f.get("module",self.active_module_id);r=next((x for x in self.app.data["rows"] if x.get("module")==f.get("module") and x.get("address")==f.get("row")),None)
         if not r:return
-        fid=f.get("id") or (str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label")))
-        rowkey=str(f.get("module"))+"|"+str(f.get("row"))
+        fid=f.get("id") or (str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label")));rowkey=str(f.get("module"))+"|"+str(f.get("row"))
         try:
             if rowkey not in self.row_feature_baselines:self.row_feature_baselines[rowkey]=norm(r.get("value",""))
-            self.feature_active[fid]=bool(active)
-            baseline=self.row_feature_baselines[rowkey]
-            arr=list(baseline)
-            active_features=[]
+            self.feature_active[fid]=bool(active);baseline=self.row_feature_baselines[rowkey];arr=list(baseline);active_features=[]
             for ff in self.app.data.get("features",[]):
                 ffid=ff.get("id") or (str(ff.get("module"))+"|"+str(ff.get("row"))+"|"+str(ff.get("label")))
                 if ff.get("module")==f.get("module") and ff.get("row")==f.get("row") and self.feature_active.get(ffid,False):active_features.append(ff)
             for ff in active_features:
                 mode=str(ff.get("mode","HEX")).upper()
                 if mode=="BITS":
-                    bi=int(ff.get("byte_index",0)); bits=parse_indices(ff.get("bits",""))
-                    if bi*2+2>len(arr):raise ValueError(f"Byte {bi} вне строки {r.get('address')}")
-                    old=int("".join(arr[bi*2:bi*2+2]),16); new=old
+                    bi=int(ff.get("byte_index",0));bits=parse_indices(ff.get("bits",""));old=int("".join(arr[bi*2:bi*2+2]),16);new=old
                     for b in bits:new|=(1<<b)
                     arr[bi*2:bi*2+2]=list(f"{new:02X}")
                 else:
-                    idx=parse_indices(ff.get("hex_indices",0)); target=norm(ff.get("on",""))
-                    if len(target)!=len(idx):raise ValueError("количество HEX индексов не совпадает со значением")
-                    for n,i in enumerate(idx):
-                        if i>=len(arr):raise ValueError(f"HEX индекс {i} вне строки {r.get('address')}")
-                        arr[i]=target[n]
-            if active_features:
-                r["value"]=" ".join("".join(arr)[i:i+4] for i in range(0,len(arr),4)); recalc(r)
-            else:
-                r["value"]=" ".join(baseline[i:i+4] for i in range(0,len(baseline),4))
-            final=norm(r["value"]); live={i for i in range(min(len(baseline),len(final))) if baseline[i]!=final[i]}
-            target_positions=set()
+                    idx=parse_indices(ff.get("hex_indices",0));target=norm(ff.get("on",""))
+                    for n,i in enumerate(idx):arr[i]=target[n]
+            if active_features:r["value"]=" ".join("".join(arr)[i:i+4] for i in range(0,len(arr),4));recalc(r)
+            else:r["value"]=" ".join(baseline[i:i+4] for i in range(0,len(baseline),4))
+            final=norm(r["value"]);live={i for i in range(min(len(baseline),len(final))) if baseline[i]!=final[i]};target_positions=set()
             for ff in active_features:
-                if str(ff.get("mode","HEX")).upper()=="BITS":
-                    bi=int(ff.get("byte_index",0)); target_positions.update((bi*2,bi*2+1))
-                else: target_positions.update(parse_indices(ff.get("hex_indices",0)))
-            shown=live|target_positions
-            self.changed_positions[r["address"]]=shown; self.changed[r["address"]]=bool(live)
-            self.set_status(f'{f.get("label")}: изменено' if live else (f'{f.get("label")}: уже включено, целевой HEX подсвечен' if active else f'{f.get("label")}: исходное значение'))
-            self.refresh()
-        except Exception as e:
-            self.feature_active[fid]=not bool(active)
-            self.set_status("Ошибка параметра: "+str(e))
+                if str(ff.get("mode","HEX")).upper()=="BITS":bi=int(ff.get("byte_index",0));target_positions.update((bi*2,bi*2+1))
+                else:target_positions.update(parse_indices(ff.get("hex_indices",0)))
+            self.changed_positions[r["address"]]=live|target_positions;self.changed[r["address"]]=bool(live);self.set_status(f'{f.get("label")}: изменено' if live else (f'{f.get("label")}: уже включено, целевой HEX подсвечен' if active else f'{f.get("label")}: исходное значение'));self.refresh()
+        except Exception as e:self.feature_active[fid]=not bool(active);self.set_status("Ошибка параметра: "+str(e))
     def open_document(self,*_):
         if platform == "android":
             try:
@@ -137,29 +114,20 @@ class Main(BoxLayout):
         else:self.save_picker()
     def _read_android_uri(self,uri):
         from jnius import autoclass
-        act=autoclass("org.kivy.android.PythonActivity").mActivity
-        stream=act.getContentResolver().openInputStream(uri)
-        InputStreamReader=autoclass("java.io.InputStreamReader"); BufferedReader=autoclass("java.io.BufferedReader")
-        br=BufferedReader(InputStreamReader(stream,"UTF-8")); lines=[]
+        act=autoclass("org.kivy.android.PythonActivity").mActivity;stream=act.getContentResolver().openInputStream(uri);InputStreamReader=autoclass("java.io.InputStreamReader");BufferedReader=autoclass("java.io.BufferedReader");br=BufferedReader(InputStreamReader(stream,"UTF-8"));lines=[]
         try:
             while True:
                 line=br.readLine()
-                if line is None: break
+                if line is None:break
                 lines.append(str(line))
-        finally:
-            br.close()
+        finally:br.close()
         return "\n".join(lines)
     def _write_android_uri(self,uri,data):
         from jnius import autoclass
-        act=autoclass("org.kivy.android.PythonActivity").mActivity
-        stream=act.getContentResolver().openOutputStream(uri,"w")
+        act=autoclass("org.kivy.android.PythonActivity").mActivity;stream=act.getContentResolver().openOutputStream(uri,"w")
         try:
-            ByteBuffer=autoclass("java.nio.ByteBuffer")
-            jbytes=ByteBuffer.wrap(data).array()
-            stream.write(jbytes)
-            stream.flush()
-        finally:
-            stream.close()
+            ByteBuffer=autoclass("java.nio.ByteBuffer");jbytes=ByteBuffer.wrap(data).array();stream.write(jbytes);stream.flush()
+        finally:stream.close()
     def _on_open_result(self,requestCode,resultCode,intent):
         if requestCode!=4101:return
         try:
