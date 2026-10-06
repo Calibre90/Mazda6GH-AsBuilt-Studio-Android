@@ -31,8 +31,9 @@ class LicenseAdminApp(App):
 
     def generate_key(self, *_):
         code = self.device.text.strip().upper()
-        if not code:
-            self.status.text = "Введите Device Code"
+        if not re.fullmatch(r"[A-F0-9]{5}(?:-[A-F0-9]{5}){3}", code):
+            self.key.text = ""
+            self.status.text = "Ошибка: Device Code должен быть XXXXX-XXXXX-XXXXX-XXXXX"
             return
         try:
             from admin_signer import sign_device_code
