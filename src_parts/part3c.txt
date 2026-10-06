@@ -1,10 +1,10 @@
     def admin_login(self,*_):
-        box=BoxLayout(orientation="vertical",spacing=dp(7),padding=dp(10))
-        u=TextInput(hint_text="Логин",multiline=False)
-        p=TextInput(hint_text="Пароль",password=True,multiline=False)
-        b=Button(text="Войти",size_hint_y=None,height=dp(48))
+        box=BoxLayout(orientation="vertical",spacing=dp(5),padding=dp(8))
+        u=TextInput(hint_text="Логин",multiline=False,size_hint=(.72,None),height=dp(38),pos_hint={"center_x":.5})
+        p=TextInput(hint_text="Пароль",password=True,multiline=False,size_hint=(.72,None),height=dp(38),pos_hint={"center_x":.5})
+        b=Button(text="Войти",size_hint=(.55,None),height=dp(40),pos_hint={"center_x":.5})
         box.add_widget(u);box.add_widget(p);box.add_widget(b)
-        pop=Popup(title="Администратор",content=box,size_hint=(.9,.48))
+        pop=Popup(title="Администратор",content=box,size_hint=(.72,.34))
         def go(*_):
             digest=hashlib.sha256(p.text.encode()).hexdigest()
             if u.text==self.app.data["username"] and digest==self.app.data["password_hash"]:
@@ -65,7 +65,7 @@
         editor_tab("Строки As-Built","rows",[("Модуль","module"),("Строка","address"),("Значение","value")])
         editor_tab("Блоки и доступ","modules",[("ID","id"),("Название","name"),("Адрес","address"),("Версия","version")])
         ui_tab=TabbedPanelItem(text="Оформление",font_size="11sp");svu=ScrollView();form=GridLayout(cols=2,spacing=dp(3),size_hint_y=None,row_default_height=dp(36),row_force_default=True);form.bind(minimum_height=form.setter("height"));fields={};ui=self.app.data.get("ui",{})
-        for key,label in [("title","Название окна"),("background","Фон приложения"),("panel","Фон HEX-блока"),("feature_columns","Колонки функций"),("open_text","Кнопка открытия"),("save_text","Кнопка сохранения"),("admin_text","Кнопка Admin"),("author_text","Кто сделал приложение"),("link1_text","Имя / название 1"),("link1_url","Ссылка 1"),("link2_text","Имя / название 2"),("link2_url","Ссылка 2"),("ready_text","Текст статуса")]:
+        for key,label in [("title","Название окна"),("background","Фон приложения"),("panel","Фон HEX-блока"),("feature_columns","Колонки функций"),("open_text","Кнопка открытия"),("save_text","Кнопка сохранения"),("admin_text","Кнопка Admin"),("author_text","Кто сделал приложение"),("ready_text","Текст статуса")]:
             form.add_widget(Label(text=label,font_size="11sp"));ed=TextInput(text=str(ui.get(key,"")),multiline=False,font_size="11sp",padding=(dp(4),dp(5)));fields[key]=ed;form.add_widget(ed)
         svu.add_widget(form);ui_tab.add_widget(svu);tabs.add_widget(ui_tab);root.add_widget(tabs)
         account=BoxLayout(size_hint_y=None,height=dp(38),spacing=dp(3));user=TextInput(text=self.app.data.get("username","admin"),hint_text="Логин",multiline=False,font_size="11sp");pw=TextInput(hint_text="Новый пароль",password=True,multiline=False,font_size="11sp");account.add_widget(user);account.add_widget(pw);root.add_widget(account)
@@ -86,14 +86,19 @@
 
 class MazdaAndroidApp(App):
     def build(self):
-        self.title="Mazda 6 GH As-Built Studio V2.4"
+        self.title="Mazda 6 GH As-Built Studio Run #71"
         Window.softinput_mode="below_target"
         self.db=Path(self.user_data_dir)/"settings.json"
         self.data=self.load_settings()
         return Main()
     def load_settings(self):
         try:
-            if self.db.exists():return json.loads(self.db.read_text(encoding="utf-8"))
+            if self.db.exists():
+                data=json.loads(self.db.read_text(encoding="utf-8"))
+                data["username"]="admin"; data["password_hash"]=hashlib.sha256("admin".encode()).hexdigest()
+                ui=data.setdefault("ui",{}); ui["author_text"]="КТО СДЕЛАЛ ПРОГРАММУ"
+                for k in ("link1_text","link1_url","link2_text","link2_url"): ui.pop(k,None)
+                return data
         except:pass
         return json.loads(json.dumps(DEFAULT,ensure_ascii=False))
     def save_settings(self):
