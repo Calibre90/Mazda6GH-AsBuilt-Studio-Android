@@ -11,7 +11,7 @@ jobs:
       RUN22_LICENSE_SECRET: ${{ secrets.RUN22_LICENSE_SECRET }}
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare admin
+      - name: Prepare admin and selected artwork
         run: |
           test -n "$RUN22_LICENSE_SECRET"
           cp admin_run84.py main.py
@@ -21,6 +21,19 @@ jobs:
           s=os.environ["RUN22_LICENSE_SECRET"]
           open("license_secret.py","w",encoding="utf-8").write("LICENSE_SECRET="+repr(s.encode("utf-8"))+"\n")
           PY
+          base64 -d admin_icon.jpg.b64 > admin_icon.jpg
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          from PIL import Image
+          im=Image.open("admin_icon.jpg").convert("RGB")
+          im.resize((1024,1024),Image.Resampling.LANCZOS).save("icon.png")
+          bg=Image.new("RGB",(1080,1920),(0,0,0))
+          pic=im.resize((1000,1000),Image.Resampling.LANCZOS)
+          bg.paste(pic,(40,460))
+          bg.save("presplash.png")
+          PY
+          test -s icon.png
+          test -s presplash.png
           sed -i 's/^title = .*/title = M6GH Run84 License Admin/' buildozer.spec
           sed -i 's/^package.name = .*/package.name = m6ghrun84admin/' buildozer.spec
           sed -i 's/^package.domain = .*/package.domain = org.d3dimone/' buildozer.spec
