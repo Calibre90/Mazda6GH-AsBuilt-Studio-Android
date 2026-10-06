@@ -1,0 +1,44 @@
+name: Build Run84 Run22 Offline APKs
+on:
+  workflow_dispatch:
+  push:
+    branches: [run84-run22-androidready-v3]
+
+jobs:
+  build-client:
+    runs-on: ubuntu-22.04
+    container: ghcr.io/kivy/buildozer:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare client
+        run: |
+          test -f androidready_v3/client/main.py
+          test -f androidready_v3/client/main_base.py
+          cd androidready_v3/client
+          python3 -m py_compile main.py main_base.py license_core.py
+      - name: Build client APK
+        working-directory: androidready_v3/client
+        run: printf 'y\n' | buildozer android debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mazda6GH-AsBuilt-Studio-Run84-Licensed
+          path: androidready_v3/client/bin/*.apk
+          if-no-files-found: error
+
+  build-admin:
+    runs-on: ubuntu-22.04
+    container: ghcr.io/kivy/buildozer:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare admin
+        run: |
+          cd androidready_v3/admin
+          python3 -m py_compile main.py license_core.py license_db.py
+      - name: Build admin APK
+        working-directory: androidready_v3/admin
+        run: printf 'y\n' | buildozer android debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: M6GH-Run84-License-Admin
+          path: androidready_v3/admin/bin/*.apk
+          if-no-files-found: error
