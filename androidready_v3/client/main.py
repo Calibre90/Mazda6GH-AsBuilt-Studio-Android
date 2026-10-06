@@ -1,0 +1,34 @@
+# Run84 + Run22 offline activation wrapper
+exec(open(__file__.replace('main.py','main_base.py'),encoding='utf-8').read().replace('if __name__=="__main__":\n    MazdaAndroidApp().run()',''))
+from license_core import device_code, verify_activation
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
+from kivy.core.clipboard import Clipboard
+from kivy.utils import platform
+class LicensedMazdaAndroidApp(MazdaAndroidApp):
+ def _android_id(self):
+  if platform=='android':
+   from jnius import autoclass
+   Secure=autoclass('android.provider.Settings$Secure'); A=autoclass('org.kivy.android.PythonActivity').mActivity
+   return Secure.getString(A.getContentResolver(),Secure.ANDROID_ID) or 'UNKNOWN'
+  return 'DESKTOP-TEST'
+ def build(self):
+  self.title='Mazda6GH-AsBuilt-Studio'; Window.softinput_mode='below_target'; self.db=Path(self.user_data_dir)/'settings.json'; self.data=self.load_settings(); self.license_db=Path(self.user_data_dir)/'license.json'; self.dc=device_code(self._android_id())
+  if self.license_db.exists():
+   try:
+    d=json.loads(self.license_db.read_text())
+    if d.get('device_code')==self.dc and verify_activation(self.dc,d.get('key','')): return Main()
+   except: pass
+  root=BoxLayout(orientation='vertical',padding=dp(18),spacing=dp(10)); root.add_widget(Label(text='Активация Mazda6GH As-Built Studio',font_size='20sp')); root.add_widget(Label(text='Device Code'))
+  code=TextInput(text=self.dc,readonly=True,multiline=False,size_hint_y=None,height=dp(48)); root.add_widget(code)
+  cp=Button(text='Копировать Device Code',size_hint_y=None,height=dp(48)); cp.bind(on_release=lambda *_:Clipboard.copy(self.dc)); root.add_widget(cp)
+  key=TextInput(hint_text='Lifetime Key',multiline=False,size_hint_y=None,height=dp(48)); root.add_widget(key); status=Label(text='Введите ключ, полученный у администратора'); root.add_widget(status)
+  btn=Button(text='Активировать',size_hint_y=None,height=dp(52)); root.add_widget(btn)
+  def activate(*_):
+   if verify_activation(self.dc,key.text):
+    self.license_db.write_text(json.dumps({'device_code':self.dc,'key':key.text.strip().upper()})); self.root.clear_widgets(); self.root.add_widget(Main())
+   else: status.text='Неверный ключ активации'
+  btn.bind(on_release=activate); return root
+if __name__=='__main__': LicensedMazdaAndroidApp().run()
