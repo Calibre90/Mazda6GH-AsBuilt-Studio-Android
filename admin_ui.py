@@ -37,7 +37,9 @@ class LicenseAdminApp(App):
         try:
             from admin_signer import sign_device_code
             self.key.text = sign_device_code(code)
-            self.status.text = "Lifetime Key создан"
+            if not self.key.text:
+                raise ValueError("empty key")
+            self.status.text = "Lifetime Key создан для " + code
         except Exception:
             self.key.text = ""
             self.status.text = "Нет приватного ключа/модуля подписи"
