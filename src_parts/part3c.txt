@@ -1,10 +1,10 @@
     def admin_login(self,*_):
-        box=BoxLayout(orientation="vertical",spacing=dp(3),padding=dp(7))
-        u=TextInput(hint_text="Логин",multiline=False,size_hint=(.82,None),height=dp(34),pos_hint={"center_x":.5})
-        p=TextInput(hint_text="Пароль",password=True,multiline=False,size_hint=(.82,None),height=dp(34),pos_hint={"center_x":.5})
-        b=Button(text="Войти",size_hint=(.62,None),height=dp(36),pos_hint={"center_x":.5})
+        box=BoxLayout(orientation="vertical",spacing=dp(2),padding=(dp(7),dp(3),dp(7),dp(7)))
+        u=TextInput(hint_text="Логин",multiline=False,size_hint=(.82,None),height=dp(32),pos_hint={"center_x":.5})
+        p=TextInput(hint_text="Пароль",password=True,multiline=False,size_hint=(.82,None),height=dp(32),pos_hint={"center_x":.5})
+        b=Button(text="Войти",size_hint=(.62,None),height=dp(34),pos_hint={"center_x":.5})
         box.add_widget(u);box.add_widget(p);box.add_widget(b)
-        pop=Popup(title="Админка",content=box,size_hint=(.58,.22),pos_hint={"center_x":.5,"center_y":.66})
+        pop=Popup(title="Админка",content=box,size_hint=(.58,.185),pos_hint={"center_x":.5,"center_y":.69},separator_height=dp(1))
         def go(*_):
             digest=hashlib.sha256(p.text.encode()).hexdigest()
             if u.text==self.app.data["username"] and digest==self.app.data["password_hash"]:
@@ -86,7 +86,7 @@
 
 class MazdaAndroidApp(App):
     def build(self):
-        self.title="Mazda 6 GH As-Built Studio Run #76"
+        self.title="Mazda 6 GH As-Built Studio Run #77"
         Window.softinput_mode="below_target"
         self.db=Path(self.user_data_dir)/"settings.json"
         self.data=self.load_settings()
