@@ -11,6 +11,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Assemble Run84 source
         run: cat src_parts/part1.txt src_parts/part2.txt src_parts/part3a.txt src_parts/part3b.txt src_parts/part3c.txt src_parts/part3d.txt > main.py
+      - name: Validate Run84 source integrity
+        run: |
+          grep -q 'class MazdaAndroidApp' main.py
+          grep -q 'def parse_abt' main.py
+          grep -q 'def admin_panel' main.py
+          grep -q 'RVM / контроль слепых зон' main.py
+          grep -q 'Keyless-ON' main.py
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
