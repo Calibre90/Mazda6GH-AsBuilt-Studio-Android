@@ -9,6 +9,10 @@ jobs:
     container: ghcr.io/kivy/buildozer:latest
     env:
       RUN22_LICENSE_SECRET: ${{ secrets.RUN22_LICENSE_SECRET }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - name: Assemble verified golden Run84 engine
@@ -38,12 +42,28 @@ jobs:
         run: |
           python3 -m pip install --quiet pillow
           python3 generate_brand_assets.py
-      - name: Build APK
-        run: printf 'y\n' | buildozer android debug
+      - name: Restore permanent Android release keystore
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$GITHUB_WORKSPACE/mazda6gh-release.jks"
+          keytool -list -keystore "$GITHUB_WORKSPACE/mazda6gh-release.jks" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" >/dev/null
+          chmod 600 "$GITHUB_WORKSPACE/mazda6gh-release.jks"
+      - name: Build permanently signed release APK
+        env:
+          P4A_RELEASE_KEYSTORE: ${{ github.workspace }}/mazda6gh-release.jks
+          P4A_RELEASE_KEYSTORE_PASSWD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          P4A_RELEASE_KEYALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          P4A_RELEASE_KEYALIAS_PASSWD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          printf 'y\n' | buildozer android release
+          rm -f "$GITHUB_WORKSPACE/mazda6gh-release.jks"
       - name: Package Run88 APK
         run: |
           mkdir -p out
-          APK=$(find bin -maxdepth 1 -name '*.apk' | head -1)
+          APK=$(find bin -maxdepth 1 -name '*release*.apk' | head -1)
           test -n "$APK"
           cp "$APK" out/Mazda6GH-AsBuilt-Studio-Run88-Red-Studio.apk
           sha256sum out/Mazda6GH-AsBuilt-Studio-Run88-Red-Studio.apk
