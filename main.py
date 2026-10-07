@@ -334,9 +334,9 @@ class Main(BoxLayout):
         box=BoxLayout(orientation="vertical",spacing=dp(4),padding=dp(8))
         u=TextInput(hint_text="Логин",multiline=False,size_hint_y=None,height=dp(38),size_hint_x=.72,pos_hint={"center_x":.5})
         p=TextInput(hint_text="Пароль",password=True,multiline=False,size_hint_y=None,height=dp(38),size_hint_x=.72,pos_hint={"center_x":.5})
-        b=Button(text="Войти",size_hint_y=None,height=dp(40),size_hint_x=.55,pos_hint={"center_x":.5})
+        b=Button(text="ВОЙТИ",size_hint_y=None,height=dp(40),size_hint_x=.55,pos_hint={"center_x":.5}); rp_button(b, True)
         box.add_widget(u);box.add_widget(p);box.add_widget(b)
-        pop=Popup(title="Администратор",content=box,size_hint=(.72,.34))
+        pop=Popup(title="АДМИНКА • RED PREMIUM",content=box,size_hint=(.78,.36),separator_color=RP["red"])
         def go(*_):
             digest=hashlib.sha256(p.text.encode()).hexdigest()
             if u.text==self.app.data["username"] and digest==self.app.data["password_hash"]:
@@ -402,7 +402,7 @@ class Main(BoxLayout):
         svu.add_widget(form);ui_tab.add_widget(svu);tabs.add_widget(ui_tab);root.add_widget(tabs)
         account=BoxLayout(size_hint_y=None,height=dp(38),spacing=dp(3));user=TextInput(text=self.app.data.get("username","admin"),hint_text="Логин",multiline=False,font_size="11sp");pw=TextInput(hint_text="Новый пароль",password=True,multiline=False,font_size="11sp");account.add_widget(user);account.add_widget(pw);root.add_widget(account)
         buttons=BoxLayout(size_hint_y=None,height=dp(44),spacing=dp(3));saveall=Button(text="Сохранить изменения",font_size="12sp");close=Button(text="Закрыть",font_size="12sp");buttons.add_widget(saveall);buttons.add_widget(close);root.add_widget(buttons)
-        pop=Popup(title="Администрирование интерфейса",content=root,size_hint=(.98,.90));close.bind(on_release=pop.dismiss)
+        pop=Popup(title="АДМИНИСТРИРОВАНИЕ • RED PREMIUM",content=root,size_hint=(.96,.88),separator_color=RP["red"]); rp_button(saveall, True); rp_button(close, False);close.bind(on_release=pop.dismiss)
         def apply(*_):
             try:
                 for commit in pending_commits:commit()
