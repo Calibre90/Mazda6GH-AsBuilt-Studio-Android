@@ -80,4 +80,4 @@ jobs:
           path: out/Mazda6GH-AsBuilt-Studio-Run88-Red-Studio.apk
           if-no-files-found: error
 
-# signing-trigger: permanent-release-v1
+# signing-trigger: permanent-release-v2-apk
