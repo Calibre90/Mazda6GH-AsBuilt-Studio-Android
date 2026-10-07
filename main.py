@@ -19,7 +19,25 @@ from kivy.uix.widget import Widget
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.utils import platform
 from kivy.core.clipboard import Clipboard
-from kivy.graphics import Color, Rectangle
+from kivy.graphics import Color, Rectangle, RoundedRectangle, Line
+
+# Run90 Red Premium — visual layer only. Functional ABT/HEX handlers below remain unchanged.
+RP = {
+    "bg": (0.031,0.039,0.051,1),
+    "panel": (0.078,0.090,0.110,1),
+    "panel2": (0.105,0.115,0.135,1),
+    "border": (0.169,0.184,0.212,1),
+    "red": (0.804,0.078,0.110,1),
+    "glow": (1.0,0.141,0.176,1),
+    "text": (0.922,0.922,0.922,1),
+    "muted": (0.667,0.682,0.710,1),
+}
+def rp_button(btn, active=False):
+    btn.background_normal=""; btn.background_down=""
+    btn.background_color=RP["red"] if active else RP["panel2"]
+    btn.color=RP["text"]
+def rp_label(lbl, muted=False):
+    lbl.color=RP["muted"] if muted else RP["text"]
 
 DEFAULT={
  "ui":{"title":"Mazda6GH-AsBuilt-Studio","background":"#f2f2f2","panel":"#fff7f2","width":590,"height":390,"feature_columns":2,"open_text":"Open As-Built file","save_text":"Save As-Built file","admin_text":"⚙","author_text":"КТО СДЕЛАЛ ПРОГРАММУ","ready_text":"Готово"},
@@ -85,17 +103,17 @@ class Main(BoxLayout):
 class Main(BoxLayout):
     status=StringProperty("Готово")
     def __init__(self,**kw):
-        super().__init__(orientation="vertical",spacing=dp(3),padding=(dp(7),dp(28),dp(7),dp(7)),**kw); self.app=App.get_running_app(); self.changed={}; self.changed_positions={}; self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data.get("rows",[])}; self.tabs=None; self.pending_save_module=None; self.active_module_id=self.app.data.get("modules",[{"id":"IC"}])[0].get("id","IC"); self.feature_active={}; self.feature_baselines={}; self.row_feature_baselines={}
-        self.header=BoxLayout(size_hint_y=None,height=dp(42),spacing=dp(5)); self.title_label=Label(text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"),font_size="13sp",halign="right"); self.header.add_widget(self.title_label); self.header_links=BoxLayout(size_hint_x=None,width=dp(92),spacing=dp(2)); self.header.add_widget(self.header_links)
-        ab=Button(text=self.app.data.get("ui",{}).get("admin_text","⚙"),size_hint_x=None,width=dp(52)); ab.bind(on_release=self.admin_login); self.header.add_widget(ab); self.add_widget(self.header)
+        super().__init__(orientation="vertical",spacing=dp(5),padding=(dp(8),dp(28),dp(8),dp(8)),**kw); Window.clearcolor=RP["bg"]; self.app=App.get_running_app(); self.changed={}; self.changed_positions={}; self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data.get("rows",[])}; self.tabs=None; self.pending_save_module=None; self.active_module_id=self.app.data.get("modules",[{"id":"IC"}])[0].get("id","IC"); self.feature_active={}; self.feature_baselines={}; self.row_feature_baselines={}
+        self.header=BoxLayout(size_hint_y=None,height=dp(58),spacing=dp(6)); self.title_label=Label(text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"),font_size="13sp",halign="right"); self.header.add_widget(self.title_label); self.header_links=BoxLayout(size_hint_x=None,width=dp(92),spacing=dp(2)); self.header.add_widget(self.header_links)
+        ab=Button(text=self.app.data.get("ui",{}).get("admin_text","⚙"),size_hint_x=None,width=dp(52)); rp_button(ab, True); ab.bind(on_release=self.admin_login); self.header.add_widget(ab); self.add_widget(self.header)
         self.tabholder=BoxLayout(); self.add_widget(self.tabholder)
-        bar=BoxLayout(size_hint_y=None,height=dp(52),spacing=dp(5)); ui=self.app.data.get("ui",{}); ob=Button(text=ui.get("open_text","Open As-Built file")); sb=Button(text=ui.get("save_text","Save As-Built file")); ob.bind(on_release=self.open_document); sb.bind(on_release=self.save_document); bar.add_widget(ob);bar.add_widget(sb);self.add_widget(bar)
+        bar=BoxLayout(size_hint_y=None,height=dp(52),spacing=dp(5)); ui=self.app.data.get("ui",{}); ob=Button(text=ui.get("open_text","Open As-Built file")); sb=Button(text=ui.get("save_text","Save As-Built file")); rp_button(ob, False); rp_button(sb, True); ob.bind(on_release=self.open_document); sb.bind(on_release=self.save_document); bar.add_widget(ob);bar.add_widget(sb);self.add_widget(bar)
         self.author_bar=BoxLayout(size_hint_y=None,height=dp(1),spacing=dp(1)); self.add_widget(self.author_bar); self.refresh_author()
-        self.stat=Label(text=self.status,size_hint_y=None,height=dp(28),font_size="12sp"); self.add_widget(self.stat); self.refresh()
+        self.stat=Label(text=self.status,size_hint_y=None,height=dp(28),font_size="12sp"); rp_label(self.stat, True); self.add_widget(self.stat); self.refresh()
     def set_status(self,s): self.status=s; self.stat.text=s
     def refresh_author(self):
         self.author_bar.clear_widgets(); self.header_links.clear_widgets()
-        b=Button(text="Dim304",font_size="10sp",padding=(dp(2),dp(2)))
+        b=Button(text="Dim304",font_size="10sp",padding=(dp(2),dp(2))); rp_button(b, False)
         b.bind(on_release=lambda _b:self.open_url("https://www.drive2.ru/users/dim304"))
         self.header_links.add_widget(b)
     def open_url(self,url):
@@ -109,9 +127,9 @@ class Main(BoxLayout):
         except Exception as e:self.set_status("Не удалось открыть ссылку: "+str(e))
     def refresh(self):
         keep_tab=self.active_module_id
-        self.title_label.text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"); self.refresh_author(); self.tabholder.clear_widgets(); mods=self.app.data.get("modules",[]); tab_w=min(dp(68),(Window.width-dp(14))/max(1,len(mods))); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36),tab_width=tab_w); self.tabs=tabs
+        self.title_label.text="[b]MAZDA 6 GH[/b]\n[color=ff242d]AS-BUILT STUDIO[/color]"; self.title_label.markup=True; self.title_label.halign="left"; self.title_label.font_size="18sp"; rp_label(self.title_label); self.refresh_author(); self.tabholder.clear_widgets(); mods=self.app.data.get("modules",[]); tab_w=min(dp(68),(Window.width-dp(14))/max(1,len(mods))); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36),tab_width=tab_w); self.tabs=tabs
         for m in self.app.data["modules"]:
-            ti=TabbedPanelItem(text=m["id"],font_size="11sp"); ti.bind(on_release=lambda tab:self._remember_tab(tab.text)); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(5),padding=dp(5)); content.bind(minimum_height=content.setter("height"))
+            ti=TabbedPanelItem(text=m["id"],font_size="12sp"); rp_button(ti, m["id"]==keep_tab); ti.bind(on_release=lambda tab:self._remember_tab(tab.text)); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(5),padding=dp(5)); content.bind(minimum_height=content.setter("height"))
             content.add_widget(Label(text=f'[b]{m.get("name")}[/b]  || ID: {m.get("address")} || Ver.: {m.get("version","1")}',markup=True,size_hint_y=None,height=dp(36),halign="left",valign="middle",font_size="12sp",shorten=True,shorten_from="right"))
             feats=[x for x in self.app.data["features"] if x.get("module")==m["id"]]
             if feats:
@@ -126,7 +144,7 @@ class Main(BoxLayout):
                 raw=norm(r.get("value","")); pos=self.changed_positions.get(r["address"],set()); rendered=""
                 for i,ch in enumerate(raw): rendered += (f'[color=ff3333][b]{ch}[/b][/color]' if i in pos else ch); rendered += (" " if i%4==3 else "")
                 addr=r["address"]
-                row=GridLayout(cols=2,size_hint_y=None,height=dp(40),spacing=dp(1)); a=Button(text=addr,size_hint_x=.30,font_name="Roboto",font_size="13sp",disabled=True); a.disabled_color=(1,1,1,1); v=Button(text=rendered.strip(),markup=True,size_hint_x=.70,font_name="Roboto",font_size="14sp",disabled=True); v.disabled_color=(1,1,1,1); row.add_widget(a); row.add_widget(v); content.add_widget(row)
+                row=GridLayout(cols=2,size_hint_y=None,height=dp(40),spacing=dp(1)); a=Button(text=addr,size_hint_x=.30,font_name="Roboto",font_size="13sp",disabled=True); rp_button(a, False); a.disabled_color=(1,1,1,1); v=Button(text=rendered.strip(),markup=True,size_hint_x=.70,font_name="Roboto",font_size="14sp",disabled=True); rp_button(v, bool(pos)); v.disabled_color=(1,1,1,1); row.add_widget(a); row.add_widget(v); content.add_widget(row)
             scroll.add_widget(content);ti.add_widget(scroll);tabs.add_widget(ti)
         self.tabholder.add_widget(tabs)
         if keep_tab:
@@ -400,7 +418,7 @@ class Main(BoxLayout):
 
 class MazdaAndroidApp(App):
     def build(self):
-        self.title="Mazda 6 GH As-Built Studio Run #70"
+        self.title="Mazda 6 GH As-Built Studio Run #90 Red Premium"
         Window.softinput_mode="below_target"
         self.db=Path(self.user_data_dir)/"settings.json"
         self.data=self.load_settings()
