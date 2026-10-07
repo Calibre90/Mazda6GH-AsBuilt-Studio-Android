@@ -1,0 +1,53 @@
+name: Build Run87 Carbon Full Rebuild
+on:
+  workflow_dispatch:
+  push:
+    branches: [run87-carbon-full-rebuild]
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container: ghcr.io/kivy/buildozer:latest
+    env:
+      RUN22_LICENSE_SECRET: ${{ secrets.RUN22_LICENSE_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble verified golden Run84 engine
+        run: |
+          cat src_parts/part1.txt src_parts/part2.txt src_parts/part3a.txt src_parts/part3b.txt src_parts/part3c.txt src_parts/part3d.txt > main_base.py
+          echo '6f01328b16e21edfbf02a53e90c9a199734ae3e7899fad25d7e1911fbf8a6221  main_base.py' | sha256sum -c -
+      - name: Rebuild entire dashboard UI
+        run: |
+          python3 run87_full_rebuild.py
+          grep -q 'class CarbonPanel' main_base.py
+          grep -q 'class CarbonButton' main_base.py
+          grep -q 'class CarbonHexRow' main_base.py
+          grep -q 'def show_about' main_base.py
+          python3 -m py_compile main_base.py
+      - name: Add unchanged device activation
+        run: |
+          test -n "$RUN22_LICENSE_SECRET"
+          cp licensed_main_v3.py main.py
+          cp license_core_v3.py license_core.py
+          python3 - <<'PY'
+          import os
+          open('license_secret.py','w',encoding='utf-8').write('LICENSE_SECRET='+repr(os.environ['RUN22_LICENSE_SECRET'].encode())+'\n')
+          PY
+          python3 -m py_compile main.py main_base.py license_core.py license_secret.py
+      - name: Generate artwork
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 generate_brand_assets.py
+      - name: Build APK
+        run: printf 'y\n' | buildozer android debug
+      - name: Package Run87 APK
+        run: |
+          mkdir -p out
+          APK=$(find bin -maxdepth 1 -name '*.apk' | head -1)
+          test -n "$APK"
+          cp "$APK" out/Mazda6GH-AsBuilt-Studio-Run87-Carbon-Full-Rebuild.apk
+          sha256sum out/Mazda6GH-AsBuilt-Studio-Run87-Carbon-Full-Rebuild.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mazda6GH-AsBuilt-Studio-Run87-Carbon-Full-Rebuild
+          path: out/Mazda6GH-AsBuilt-Studio-Run87-Carbon-Full-Rebuild.apk
+          if-no-files-found: error
