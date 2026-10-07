@@ -1,8 +1,8 @@
-name: Build Run88 Red Studio
+name: Build Run89 Premium Studio
 on:
   workflow_dispatch:
   push:
-    branches: [run88-red-studio-release]
+    branches: [run89-premium-ui]
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -65,19 +65,19 @@ jobs:
           ./gradlew assembleRelease
           cd "$GITHUB_WORKSPACE"
           rm -f "$GITHUB_WORKSPACE/mazda6gh-release.jks"
-      - name: Package Run88 APK
+      - name: Package Run89 APK
         run: |
           mkdir -p out
           APK=$(find .buildozer/android/platform -type f -path '*/build/outputs/apk/release/*.apk' | head -1)
           test -n "$APK"
           echo "Using signed release APK: $APK"
           test -n "$APK"
-          cp "$APK" out/Mazda6GH-AsBuilt-Studio-Run88-Red-Studio.apk
-          sha256sum out/Mazda6GH-AsBuilt-Studio-Run88-Red-Studio.apk
+          cp "$APK" out/Mazda6GH-AsBuilt-Studio-Run89-Premium-Studio.apk
+          sha256sum out/Mazda6GH-AsBuilt-Studio-Run89-Premium-Studio.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Mazda6GH-AsBuilt-Studio-Run88-Red-Studio
-          path: out/Mazda6GH-AsBuilt-Studio-Run88-Red-Studio.apk
+          name: Mazda6GH-AsBuilt-Studio-Run89-Premium-Studio
+          path: out/Mazda6GH-AsBuilt-Studio-Run89-Premium-Studio.apk
           if-no-files-found: error
 
 # signing-trigger: permanent-release-v2-apk
