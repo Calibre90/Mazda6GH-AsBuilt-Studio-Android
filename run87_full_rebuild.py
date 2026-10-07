@@ -56,5 +56,8 @@ s=s.replace('a=Button(text=addr,size_hint_x=.30,font_name="Roboto",font_size="13
 s=s.replace('v=Button(text=rendered.strip(),markup=True,size_hint_x=.70,font_name="Roboto",font_size="14sp",disabled=True);',
 '''v=Button(text=rendered.strip(),markup=True,size_hint_x=.70,font_name="Roboto",font_size="14sp",disabled=True,background_normal="",background_color=(0.045,0.04,0.052,1));''')
 
+checks=["def about_popup(self,*_):","def toggle(self,f,active):","def open_document(self,*_):","def save_document(self,*_):","Run #89","Wolis11","drive2.ru/users/dim304","drive2.ru/users/wolis11"]
+missing=[x for x in checks if x not in s]
+if missing: raise SystemExit("Run89 post-patch verification failed: "+", ".join(missing))
 p.write_text(s,encoding="utf-8")
-print("Run89 Red Premium applied: Run88 #12 handlers preserved, red/dark shell + About popup installed.")
+print("Run89 Red Premium verified: Run88 #12 handlers preserved, red/dark shell + About popup installed.")
