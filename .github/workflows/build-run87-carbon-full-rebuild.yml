@@ -72,3 +72,5 @@ jobs:
           name: Mazda6GH-AsBuilt-Studio-Run88-Red-Studio
           path: out/Mazda6GH-AsBuilt-Studio-Run88-Red-Studio.apk
           if-no-files-found: error
+
+# signing-trigger: permanent-release-v1
