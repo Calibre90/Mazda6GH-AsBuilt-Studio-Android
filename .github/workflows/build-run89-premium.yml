@@ -1,0 +1,86 @@
+name: Build Run89 Premium Studio
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - run89-premium-ui
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container: ghcr.io/kivy/buildozer:latest
+    env:
+      RUN22_LICENSE_SECRET: ${{ secrets.RUN22_LICENSE_SECRET }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble verified golden Run84 engine
+        run: |
+          cat src_parts/part1.txt src_parts/part2.txt src_parts/part3a.txt src_parts/part3b.txt src_parts/part3c.txt src_parts/part3d.txt > main_base.py
+          echo '6f01328b16e21edfbf02a53e90c9a199734ae3e7899fad25d7e1911fbf8a6221  main_base.py' | sha256sum -c -
+      - name: Verify exact golden Run84 dashboard UI
+        run: |
+          python3 run87_full_rebuild.py
+          grep -q 'class Main(BoxLayout):' main_base.py
+          grep -q 'def refresh(self):' main_base.py
+          grep -q 'def toggle(self,f,active):' main_base.py
+          grep -q 'def open_document(self,\*_):' main_base.py
+          grep -q 'def save_document(self,\*_):' main_base.py
+          python3 -m py_compile main_base.py
+      - name: Add unchanged device activation
+        run: |
+          test -n "$RUN22_LICENSE_SECRET"
+          cp licensed_main_v3.py main.py
+          cp license_core_v3.py license_core.py
+          python3 - <<'PY'
+          import os
+          open('license_secret.py','w',encoding='utf-8').write('LICENSE_SECRET='+repr(os.environ['RUN22_LICENSE_SECRET'].encode())+'\n')
+          PY
+          python3 -m py_compile main.py main_base.py license_core.py license_secret.py
+      - name: Generate artwork
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 generate_brand_assets.py
+      - name: Restore permanent Android release keystore
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$GITHUB_WORKSPACE/mazda6gh-release.jks"
+          keytool -list -keystore "$GITHUB_WORKSPACE/mazda6gh-release.jks" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" >/dev/null
+          chmod 600 "$GITHUB_WORKSPACE/mazda6gh-release.jks"
+      - name: Build permanently signed release APK
+        env:
+          P4A_RELEASE_KEYSTORE: ${{ github.workspace }}/mazda6gh-release.jks
+          P4A_RELEASE_KEYSTORE_PASSWD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          P4A_RELEASE_KEYALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          P4A_RELEASE_KEYALIAS_PASSWD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          printf 'y\n' | buildozer android release
+          # Buildozer release emits AAB here; create installable APK with Gradle using the same release signing config.
+          DIST_DIR=$(find .buildozer/android/platform -type d -path '*/dists/*' | head -1)
+          cd "$DIST_DIR"
+          ./gradlew assembleRelease
+          cd "$GITHUB_WORKSPACE"
+          rm -f "$GITHUB_WORKSPACE/mazda6gh-release.jks"
+      - name: Package Run89 APK
+        run: |
+          mkdir -p out
+          APK=$(find .buildozer/android/platform -type f -path '*/build/outputs/apk/release/*.apk' | head -1)
+          test -n "$APK"
+          echo "Using signed release APK: $APK"
+          test -n "$APK"
+          cp "$APK" out/Mazda6GH-AsBuilt-Studio-Run89-Premium-Studio.apk
+          sha256sum out/Mazda6GH-AsBuilt-Studio-Run89-Premium-Studio.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mazda6GH-AsBuilt-Studio-Run89-Premium-Studio
+          path: out/Mazda6GH-AsBuilt-Studio-Run89-Premium-Studio.apk
+          if-no-files-found: error
+
+# signing-trigger: permanent-release-v2-apk
+
+# run89-trigger-fix-v2
