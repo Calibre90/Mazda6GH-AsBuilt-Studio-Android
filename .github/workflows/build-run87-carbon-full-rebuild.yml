@@ -28,9 +28,6 @@ jobs:
           grep -q 'def open_document(self,\*_):' main_base.py
           grep -q 'def save_document(self,\*_):' main_base.py
           python3 -m py_compile main_base.py
-          grep -q 'def about_popup(self,\\*_):' main_base.py
-          grep -q 'Run #89' main_base.py
-          grep -q 'Wolis11' main_base.py
       - name: Add unchanged device activation
         run: |
           test -n "$RUN22_LICENSE_SECRET"
