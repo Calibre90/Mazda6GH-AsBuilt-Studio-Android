@@ -34,7 +34,7 @@ RP = {
     "muted": (0.667,0.682,0.710,1),
 }
 def rp_button(btn, active=False):
-    btn.background_normal=""; btn.background_down=""
+    btn.background_normal=""; btn.background_down=""; btn.background_disabled_normal=""
     btn.background_color=RP["red"] if active else RP["panel2"]
     btn.color=RP["text"]
 def rp_label(lbl, muted=False):
@@ -130,7 +130,7 @@ class Main(BoxLayout):
         keep_tab=self.active_module_id
         self.title_label.text="[b]MAZDA 6 GH[/b]\n[color=ff242d]AS-BUILT STUDIO[/color]"; self.title_label.markup=True; self.title_label.halign="left"; self.title_label.font_size="18sp"; rp_label(self.title_label); self.refresh_author(); self.tabholder.clear_widgets(); mods=self.app.data.get("modules",[]); tab_w=min(dp(68),(Window.width-dp(14))/max(1,len(mods))); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(40),tab_width=tab_w,background_color=RP["bg"]); self.tabs=tabs
         for m in self.app.data["modules"]:
-            ti=TabbedPanelItem(text=m["id"],font_size="12sp"); rp_button(ti, m["id"]==keep_tab); ti.bind(on_release=lambda tab:self._remember_tab(tab.text)); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(6),padding=(dp(4),dp(7))); content.bind(minimum_height=content.setter("height"))
+            ti=TabbedPanelItem(text=m["id"],font_size="12sp"); rp_button(ti, m["id"]==keep_tab); ti.background_normal=("assets/ui_red_premium/08_tab_ic_active.png" if m["id"]==keep_tab else "assets/ui_red_premium/09_tab_inactive.png"); ti.background_down="assets/ui_red_premium/08_tab_ic_active.png"; ti.background_color=(1,1,1,1); ti.bind(on_release=lambda tab:self._remember_tab(tab.text)); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(6),padding=(dp(4),dp(7))); content.bind(minimum_height=content.setter("height"))
             info=Label(text=f'[b]{m.get("name")}[/b]\n[color=aaaeb5]ID: {m.get("address")}  |  Ver.: {m.get("version","1")}[/color]',markup=True,size_hint_y=None,height=dp(54),halign="left",valign="middle",font_size="12sp",padding=(dp(10),dp(5))); info.bind(size=lambda inst,val:setattr(inst,"text_size",(val[0]-dp(20),val[1]))); rp_label(info); content.add_widget(info)
             feats=[x for x in self.app.data["features"] if x.get("module")==m["id"]]
             if feats:
@@ -138,7 +138,7 @@ class Main(BoxLayout):
                 grid=GridLayout(cols=cols,size_hint_y=None,spacing=dp(4),row_default_height=dp(42),row_force_default=True)
                 grid.bind(minimum_height=grid.setter("height"))
                 for f in feats:
-                    line=BoxLayout(size_hint_y=None,height=dp(42),spacing=dp(2)); cb=CheckBox(size_hint_x=None,width=dp(34),color=RP["red"]); fk=f.get("id") or (str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label"))); cb.active=bool(self.feature_active.get(fk,False)); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); lbl=Label(text=f.get("label",""),halign="left",valign="middle",font_size="12sp",padding=(dp(2),0)); lbl.bind(size=lambda inst,val:setattr(inst,"text_size",(val[0],val[1]))); line.add_widget(lbl); grid.add_widget(line)
+                    line=BoxLayout(size_hint_y=None,height=dp(42),spacing=dp(2)); cb=CheckBox(size_hint_x=None,width=dp(34),color=RP["red"]); fk=f.get("id") or (str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label"))); cb.active=bool(self.feature_active.get(fk,False)); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); cb.background_checkbox_normal="assets/ui_red_premium/11_checkbox_off.png"; cb.background_checkbox_down="assets/ui_red_premium/11_checkbox_off.png"; cb.background_checkbox_disabled_normal="assets/ui_red_premium/11_checkbox_off.png"; cb.background_checkbox_disabled_down="assets/ui_red_premium/12_checkbox_on_red.png"; line.add_widget(cb); lbl=Label(text=f.get("label",""),halign="left",valign="middle",font_size="12sp",padding=(dp(2),0)); lbl.bind(size=lambda inst,val:setattr(inst,"text_size",(val[0],val[1]))); line.add_widget(lbl); grid.add_widget(line)
                 content.add_widget(grid)
             
             for r in [x for x in self.app.data["rows"] if x.get("module")==m["id"]]:
