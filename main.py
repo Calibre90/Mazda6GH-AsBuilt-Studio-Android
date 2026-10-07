@@ -107,8 +107,8 @@ class Main(BoxLayout):
         self.header=BoxLayout(size_hint_y=None,height=dp(58),spacing=dp(6)); self.title_label=Label(text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"),font_size="13sp",halign="right"); self.header.add_widget(self.title_label); self.header_links=BoxLayout(size_hint_x=None,width=dp(92),spacing=dp(2)); self.header.add_widget(self.header_links)
         ab=Button(text=self.app.data.get("ui",{}).get("admin_text","⚙"),size_hint_x=None,width=dp(52)); rp_button(ab, True); ab.bind(on_release=self.admin_login); self.header.add_widget(ab); self.add_widget(self.header)
         self.tabholder=BoxLayout(); self.add_widget(self.tabholder)
-        bar=BoxLayout(size_hint_y=None,height=dp(52),spacing=dp(5)); ui=self.app.data.get("ui",{}); ob=Button(text=ui.get("open_text","Open As-Built file")); sb=Button(text=ui.get("save_text","Save As-Built file")); rp_button(ob, False); rp_button(sb, True); ob.bind(on_release=self.open_document); sb.bind(on_release=self.save_document); bar.add_widget(ob);bar.add_widget(sb);self.add_widget(bar)
-        self.author_bar=BoxLayout(size_hint_y=None,height=dp(1),spacing=dp(1)); self.add_widget(self.author_bar); self.refresh_author()
+        bar=BoxLayout(size_hint_y=None,height=dp(54),spacing=dp(7)); ui=self.app.data.get("ui",{}); ob=Button(text=ui.get("open_text","Open As-Built file")); sb=Button(text=ui.get("save_text","Save As-Built file")); rp_button(ob, False); rp_button(sb, True); ob.bind(on_release=self.open_document); sb.bind(on_release=self.save_document); bar.add_widget(ob);bar.add_widget(sb);self.add_widget(bar)
+        self.author_bar=BoxLayout(size_hint_y=None,height=dp(2),spacing=dp(1)); self.add_widget(self.author_bar); self.refresh_author()
         self.stat=Label(text=self.status,size_hint_y=None,height=dp(28),font_size="12sp"); rp_label(self.stat, True); self.add_widget(self.stat); self.refresh()
     def set_status(self,s): self.status=s; self.stat.text=s
     def refresh_author(self):
@@ -130,21 +130,21 @@ class Main(BoxLayout):
         self.title_label.text="[b]MAZDA 6 GH[/b]\n[color=ff242d]AS-BUILT STUDIO[/color]"; self.title_label.markup=True; self.title_label.halign="left"; self.title_label.font_size="18sp"; rp_label(self.title_label); self.refresh_author(); self.tabholder.clear_widgets(); mods=self.app.data.get("modules",[]); tab_w=min(dp(68),(Window.width-dp(14))/max(1,len(mods))); tabs=TabbedPanel(do_default_tab=False,tab_height=dp(36),tab_width=tab_w); self.tabs=tabs
         for m in self.app.data["modules"]:
             ti=TabbedPanelItem(text=m["id"],font_size="12sp"); rp_button(ti, m["id"]==keep_tab); ti.bind(on_release=lambda tab:self._remember_tab(tab.text)); scroll=ScrollView(); content=BoxLayout(orientation="vertical",size_hint_y=None,spacing=dp(5),padding=dp(5)); content.bind(minimum_height=content.setter("height"))
-            content.add_widget(Label(text=f'[b]{m.get("name")}[/b]  || ID: {m.get("address")} || Ver.: {m.get("version","1")}',markup=True,size_hint_y=None,height=dp(36),halign="left",valign="middle",font_size="12sp",shorten=True,shorten_from="right"))
+            info=Label(text=f'[b]{m.get("name")}[/b]\n[color=aaaeb5]ID: {m.get("address")}  |  Ver.: {m.get("version","1")}[/color]',markup=True,size_hint_y=None,height=dp(54),halign="left",valign="middle",font_size="12sp",padding=(dp(10),dp(5))); info.bind(size=lambda inst,val:setattr(inst,"text_size",(val[0]-dp(20),val[1]))); rp_label(info); content.add_widget(info)
             feats=[x for x in self.app.data["features"] if x.get("module")==m["id"]]
             if feats:
                 cols=max(1,int(self.app.data.get("ui",{}).get("feature_columns",2)))
                 grid=GridLayout(cols=cols,size_hint_y=None,spacing=dp(2),row_default_height=dp(38),row_force_default=True)
                 grid.bind(minimum_height=grid.setter("height"))
                 for f in feats:
-                    line=BoxLayout(size_hint_y=None,height=dp(38),spacing=0); cb=CheckBox(size_hint_x=None,width=dp(30)); fk=f.get("id") or (str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label"))); cb.active=bool(self.feature_active.get(fk,False)); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); lbl=Label(text=f.get("label",""),halign="left",valign="middle",font_size="12sp",padding=(dp(2),0)); lbl.bind(size=lambda inst,val:setattr(inst,"text_size",(val[0],val[1]))); line.add_widget(lbl); grid.add_widget(line)
+                    line=BoxLayout(size_hint_y=None,height=dp(42),spacing=dp(2)); cb=CheckBox(size_hint_x=None,width=dp(34),color=RP["red"]); fk=f.get("id") or (str(f.get("module"))+"|"+str(f.get("row"))+"|"+str(f.get("label"))); cb.active=bool(self.feature_active.get(fk,False)); cb.bind(active=lambda _c,val,ff=f:self.toggle(ff,val)); line.add_widget(cb); lbl=Label(text=f.get("label",""),halign="left",valign="middle",font_size="12sp",padding=(dp(2),0)); lbl.bind(size=lambda inst,val:setattr(inst,"text_size",(val[0],val[1]))); line.add_widget(lbl); grid.add_widget(line)
                 content.add_widget(grid)
             
             for r in [x for x in self.app.data["rows"] if x.get("module")==m["id"]]:
                 raw=norm(r.get("value","")); pos=self.changed_positions.get(r["address"],set()); rendered=""
                 for i,ch in enumerate(raw): rendered += (f'[color=ff3333][b]{ch}[/b][/color]' if i in pos else ch); rendered += (" " if i%4==3 else "")
                 addr=r["address"]
-                row=GridLayout(cols=2,size_hint_y=None,height=dp(40),spacing=dp(1)); a=Button(text=addr,size_hint_x=.30,font_name="Roboto",font_size="13sp",disabled=True); rp_button(a, False); a.disabled_color=(1,1,1,1); v=Button(text=rendered.strip(),markup=True,size_hint_x=.70,font_name="Roboto",font_size="14sp",disabled=True); rp_button(v, bool(pos)); v.disabled_color=(1,1,1,1); row.add_widget(a); row.add_widget(v); content.add_widget(row)
+                row=GridLayout(cols=2,size_hint_y=None,height=dp(44),spacing=dp(2)); a=Button(text=addr,size_hint_x=.30,font_name="Roboto",font_size="13sp",disabled=True); rp_button(a, False); a.disabled_color=(1,1,1,1); v=Button(text=rendered.strip(),markup=True,size_hint_x=.70,font_name="Roboto",font_size="14sp",disabled=True); rp_button(v, bool(pos)); v.disabled_color=(1,1,1,1); row.add_widget(a); row.add_widget(v); content.add_widget(row)
             scroll.add_widget(content);ti.add_widget(scroll);tabs.add_widget(ti)
         self.tabholder.add_widget(tabs)
         if keep_tab:
