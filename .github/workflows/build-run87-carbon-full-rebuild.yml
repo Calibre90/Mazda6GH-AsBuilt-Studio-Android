@@ -2,7 +2,8 @@ name: Build Run89 Premium Studio
 on:
   workflow_dispatch:
   push:
-    branches: [run89-premium-ui]
+    branches:
+      - run89-premium-ui
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -81,3 +82,5 @@ jobs:
           if-no-files-found: error
 
 # signing-trigger: permanent-release-v2-apk
+
+# run89-trigger-fix-v2
