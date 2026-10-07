@@ -1,0 +1,19 @@
+{
+  "name": "Run90 Red Premium",
+  "colors": {
+    "background": "#080A0D",
+    "panel": "#14171C",
+    "border": "#2B2F36",
+    "accent": "#CD141C",
+    "glow": "#FF242D",
+    "text": "#EBEBEB",
+    "muted": "#AAAEB5"
+  },
+  "constraints": {
+    "logic_changes": false,
+    "abt_logic": false,
+    "module_logic": false,
+    "hex_bit_logic": false,
+    "admin_logic": false
+  }
+}
