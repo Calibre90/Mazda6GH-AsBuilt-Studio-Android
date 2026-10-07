@@ -19,3 +19,5 @@ s=s.replace('ob=Button(text=ui.get("open_text","Open As-Built file")); sb=Button
 s=s.replace('b=Button(text="Dim304",font_size="11sp",padding=(dp(2),dp(2)))','b=Button(text="ⓘ",font_size="18sp",padding=(dp(2),dp(2)),background_normal="",background_color=(0.02,0.28,0.62,1),color=(1,1,1,1))')
 p.write_text(s,encoding="utf-8")
 print("Run89 Premium UI applied; golden handlers preserved; TPMS/AFS/DSC placeholders are unmapped and safe.")
+
+# build-trigger: run89-1
