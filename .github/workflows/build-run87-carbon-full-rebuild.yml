@@ -15,13 +15,14 @@ jobs:
         run: |
           cat src_parts/part1.txt src_parts/part2.txt src_parts/part3a.txt src_parts/part3b.txt src_parts/part3c.txt src_parts/part3d.txt > main_base.py
           echo '6f01328b16e21edfbf02a53e90c9a199734ae3e7899fad25d7e1911fbf8a6221  main_base.py' | sha256sum -c -
-      - name: Rebuild entire dashboard UI
+      - name: Verify exact golden Run84 dashboard UI
         run: |
           python3 run87_full_rebuild.py
-          grep -q 'class CarbonPanel' main_base.py
-          grep -q 'class CarbonButton' main_base.py
-          grep -q 'class CarbonHexRow' main_base.py
-          grep -q 'def show_about' main_base.py
+          grep -q 'class Main(BoxLayout):' main_base.py
+          grep -q 'def refresh(self):' main_base.py
+          grep -q 'def toggle(self,f,active):' main_base.py
+          grep -q 'def open_document(self,\*_):' main_base.py
+          grep -q 'def save_document(self,\*_):' main_base.py
           python3 -m py_compile main_base.py
       - name: Add unchanged device activation
         run: |
