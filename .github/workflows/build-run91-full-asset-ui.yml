@@ -1,0 +1,48 @@
+name: Build Run91 Full Asset UI
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - run91-full-asset-ui
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container: ghcr.io/kivy/buildozer:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install and verify approved UI assets
+        run: |
+          rm -rf /tmp/run91-assets
+          mkdir -p /tmp/run91-assets assets/ui_red_premium
+          unzip -o Mazda6GH_ASBuilt_UI_Assets.zip -d /tmp/run91-assets
+          find /tmp/run91-assets -type f -name '*.png' -exec cp -f {} assets/ui_red_premium/ \;
+          test "$(find assets/ui_red_premium -maxdepth 1 -type f -name '*.png' | wc -l)" -ge 20
+          for n in $(seq -w 1 20); do find assets/ui_red_premium -maxdepth 1 -type f -name "$n*.png" | grep -q . || exit 1; done
+      - name: Verify engine remains present
+        run: |
+          python3 -m py_compile main.py
+          grep -q 'def parse_abt' main.py
+          grep -q 'def toggle' main.py
+          grep -q 'def open_document' main.py
+          grep -q 'def save_document' main.py
+          grep -q 'def current_module' main.py
+          grep -q 'def admin_panel' main.py
+      - name: Generate existing brand artwork
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 generate_brand_assets.py
+      - name: Build debug APK
+        run: |
+          printf 'y\n' | buildozer android debug
+      - name: Package Run91 APK
+        run: |
+          mkdir -p out
+          APK=$(find bin -maxdepth 1 -type f -name '*.apk' | head -1)
+          test -n "$APK"
+          cp "$APK" out/Mazda6GH-AsBuilt-Studio-Run91-Full-Asset-UI.apk
+          sha256sum out/Mazda6GH-AsBuilt-Studio-Run91-Full-Asset-UI.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mazda6GH-AsBuilt-Studio-Run91-Full-Asset-UI
+          path: out/Mazda6GH-AsBuilt-Studio-Run91-Full-Asset-UI.apk
+          if-no-files-found: error
