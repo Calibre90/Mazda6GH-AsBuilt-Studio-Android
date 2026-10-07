@@ -21,3 +21,5 @@ p.write_text(s,encoding="utf-8")
 print("Run89 Premium UI applied; golden handlers preserved; TPMS/AFS/DSC placeholders are unmapped and safe.")
 
 # build-trigger: run89-1
+
+# registered-workflow-trigger
