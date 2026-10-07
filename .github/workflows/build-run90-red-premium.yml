@@ -1,0 +1,39 @@
+name: Build Run90 Red Premium UI
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - run90-ui-red-premium
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container: ghcr.io/kivy/buildozer:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Run90 UI source
+        run: |
+          python3 -m py_compile main.py
+          grep -q 'Run #90 Red Premium' main.py
+          grep -q 'def parse_abt' main.py
+          grep -q 'def toggle' main.py
+          grep -q 'def open_document' main.py
+          grep -q 'def save_document' main.py
+      - name: Generate existing brand artwork
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 generate_brand_assets.py
+      - name: Build debug APK
+        run: |
+          printf 'y\n' | buildozer android debug
+      - name: Package Run90 APK
+        run: |
+          mkdir -p out
+          APK=$(find bin -maxdepth 1 -type f -name '*.apk' | head -1)
+          test -n "$APK"
+          cp "$APK" out/Mazda6GH-AsBuilt-Studio-Run90-Red-Premium.apk
+          sha256sum out/Mazda6GH-AsBuilt-Studio-Run90-Red-Premium.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mazda6GH-AsBuilt-Studio-Run90-Red-Premium
+          path: out/Mazda6GH-AsBuilt-Studio-Run90-Red-Premium.apk
+          if-no-files-found: error
