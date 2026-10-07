@@ -1,8 +1,8 @@
-name: Build Run88 Red Studio
+name: Build Run89 Red Premium
 on:
   workflow_dispatch:
   push:
-    branches: [run88-red-studio-release]
+    branches: [run89-red-premium-from-run88-12]
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -19,7 +19,7 @@ jobs:
         run: |
           cat src_parts/part1.txt src_parts/part2.txt src_parts/part3a.txt src_parts/part3b.txt src_parts/part3c.txt src_parts/part3d.txt > main_base.py
           echo '6f01328b16e21edfbf02a53e90c9a199734ae3e7899fad25d7e1911fbf8a6221  main_base.py' | sha256sum -c -
-      - name: Verify exact golden Run84 dashboard UI
+      - name: Apply and verify Run89 Red Premium UI
         run: |
           python3 run87_full_rebuild.py
           grep -q 'class Main(BoxLayout):' main_base.py
@@ -65,19 +65,19 @@ jobs:
           ./gradlew assembleRelease
           cd "$GITHUB_WORKSPACE"
           rm -f "$GITHUB_WORKSPACE/mazda6gh-release.jks"
-      - name: Package Run88 APK
+      - name: Package Run89 APK
         run: |
           mkdir -p out
           APK=$(find .buildozer/android/platform -type f -path '*/build/outputs/apk/release/*.apk' | head -1)
           test -n "$APK"
           echo "Using signed release APK: $APK"
           test -n "$APK"
-          cp "$APK" out/Mazda6GH-AsBuilt-Studio-Run88-Red-Studio.apk
-          sha256sum out/Mazda6GH-AsBuilt-Studio-Run88-Red-Studio.apk
+          cp "$APK" out/Mazda6GH-AsBuilt-Studio-Run89-Red-Premium.apk
+          sha256sum out/Mazda6GH-AsBuilt-Studio-Run89-Red-Premium.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Mazda6GH-AsBuilt-Studio-Run88-Red-Studio
-          path: out/Mazda6GH-AsBuilt-Studio-Run88-Red-Studio.apk
+          name: Mazda6GH-AsBuilt-Studio-Run89-Red-Premium
+          path: out/Mazda6GH-AsBuilt-Studio-Run89-Red-Premium.apk
           if-no-files-found: error
 
 # signing-trigger: permanent-release-v1
