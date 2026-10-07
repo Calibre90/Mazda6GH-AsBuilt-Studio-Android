@@ -104,8 +104,8 @@ class Main(BoxLayout):
 class Main(BoxLayout):
     status=StringProperty("Готово")
     def __init__(self,**kw):
-        super().__init__(orientation="vertical",spacing=dp(5),padding=(dp(8),dp(28),dp(8),dp(8)),**kw); Window.clearcolor=RP["bg"]; self.app=App.get_running_app(); self.changed={}; self.changed_positions={}; self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data.get("rows",[])}; self.tabs=None; self.pending_save_module=None; self.active_module_id=self.app.data.get("modules",[{"id":"IC"}])[0].get("id","IC"); self.feature_active={}; self.feature_baselines={}; self.row_feature_baselines={}
-        self.header=BoxLayout(size_hint_y=None,height=dp(64),spacing=dp(6)); brand=Label(text="[b]M6[/b]",markup=True,size_hint_x=None,width=dp(54),font_size="22sp",color=RP["red"]); self.header.add_widget(brand); self.title_label=Label(text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"),font_size="13sp",halign="right"); self.header.add_widget(self.title_label); gauge=Label(text="╱╱╱ ◉",size_hint_x=None,width=dp(74),font_size="18sp",color=RP["red"]); self.header.add_widget(gauge); self.header_links=BoxLayout(size_hint_x=None,width=dp(92),spacing=dp(2)); self.header.add_widget(self.header_links)
+        super().__init__(orientation="vertical",spacing=dp(5),padding=(dp(8),dp(28),dp(8),dp(8)),**kw); Window.clearcolor=(0.006,0.008,0.012,1); self.app=App.get_running_app(); self.changed={}; self.changed_positions={}; self.original_values={r.get("address"):norm(r.get("value","")) for r in self.app.data.get("rows",[])}; self.tabs=None; self.pending_save_module=None; self.active_module_id=self.app.data.get("modules",[{"id":"IC"}])[0].get("id","IC"); self.feature_active={}; self.feature_baselines={}; self.row_feature_baselines={}
+        self.header=BoxLayout(size_hint_y=None,height=dp(116),spacing=0); brand=Image(source="assets/ui_red_premium/01_header_brand.png",allow_stretch=True,keep_ratio=False); self.header.add_widget(brand); self.title_label=Label(text=self.app.data.get("ui",{}).get("author_text","КТО СДЕЛАЛ ПРОГРАММУ (ИЗМЕНИТЬ)"),font_size="13sp",halign="right"); self.title_label.size_hint_x=0; self.title_label.width=0; self.title_label.opacity=0; self.header_links=BoxLayout(size_hint_x=None,width=dp(92),spacing=dp(2)); self.header.add_widget(self.header_links)
         ab=Button(text=self.app.data.get("ui",{}).get("admin_text","⚙"),size_hint_x=None,width=dp(52)); rp_button(ab, True); ab.bind(on_release=self.admin_login); self.header.add_widget(ab); self.add_widget(self.header)
         self.tabholder=BoxLayout(); self.add_widget(self.tabholder)
         bar=BoxLayout(size_hint_y=None,height=dp(54),spacing=dp(7)); ui=self.app.data.get("ui",{}); ob=Button(text=ui.get("open_text","Open As-Built file")); sb=Button(text=ui.get("save_text","Save As-Built file")); rp_button(ob, False); rp_button(sb, True); ob.bind(on_release=self.open_document); sb.bind(on_release=self.save_document); bar.add_widget(ob);bar.add_widget(sb);self.add_widget(bar)
@@ -116,7 +116,7 @@ class Main(BoxLayout):
         self.author_bar.clear_widgets(); self.header_links.clear_widgets()
         b=Button(text="Dim304",font_size="10sp",padding=(dp(2),dp(2))); rp_button(b, False)
         b.bind(on_release=lambda _b:self.open_url("https://www.drive2.ru/users/dim304"))
-        self.header_links.add_widget(b)
+        self.author_bar.add_widget(b)
     def open_url(self,url):
         if not url:return
         try:
