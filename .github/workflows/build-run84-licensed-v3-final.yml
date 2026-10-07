@@ -1,8 +1,8 @@
-name: Build Run84 Licensed v3 Final
+name: Build Run88 Golden Restore
 on:
   workflow_dispatch:
   push:
-    branches: [run84-licensed-v3-final]
+    branches: [run88-golden-restore]
 
 jobs:
   build:
@@ -42,10 +42,10 @@ jobs:
           mkdir -p out
           APK=$(find bin -maxdepth 1 -name '*.apk' | head -1)
           test -n "$APK"
-          cp "$APK" out/Mazda6GH-AsBuilt-Studio-Run84-Licensed-v3.apk
-          sha256sum out/Mazda6GH-AsBuilt-Studio-Run84-Licensed-v3.apk
+          cp "$APK" out/Mazda6GH-AsBuilt-Studio-Run88-Golden-Restore.apk
+          sha256sum out/Mazda6GH-AsBuilt-Studio-Run88-Golden-Restore.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Mazda6GH-AsBuilt-Studio-Run84-Licensed-v3
-          path: out/Mazda6GH-AsBuilt-Studio-Run84-Licensed-v3.apk
+          name: Mazda6GH-AsBuilt-Studio-Run88-Golden-Restore
+          path: out/Mazda6GH-AsBuilt-Studio-Run88-Golden-Restore.apk
           if-no-files-found: error
