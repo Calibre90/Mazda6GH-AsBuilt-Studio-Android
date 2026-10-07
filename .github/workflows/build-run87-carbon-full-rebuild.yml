@@ -1,8 +1,8 @@
-name: Build Run87 Carbon Full Rebuild
+name: Build Run88 Red Studio
 on:
   workflow_dispatch:
   push:
-    branches: [run87-carbon-full-rebuild]
+    branches: [run88-red-studio-release]
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -40,15 +40,15 @@ jobs:
           python3 generate_brand_assets.py
       - name: Build APK
         run: printf 'y\n' | buildozer android debug
-      - name: Package Run87 APK
+      - name: Package Run88 APK
         run: |
           mkdir -p out
           APK=$(find bin -maxdepth 1 -name '*.apk' | head -1)
           test -n "$APK"
-          cp "$APK" out/Mazda6GH-AsBuilt-Studio-Run87-Carbon-Full-Rebuild.apk
-          sha256sum out/Mazda6GH-AsBuilt-Studio-Run87-Carbon-Full-Rebuild.apk
+          cp "$APK" out/Mazda6GH-AsBuilt-Studio-Run88-Red-Studio.apk
+          sha256sum out/Mazda6GH-AsBuilt-Studio-Run88-Red-Studio.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Mazda6GH-AsBuilt-Studio-Run87-Carbon-Full-Rebuild
-          path: out/Mazda6GH-AsBuilt-Studio-Run87-Carbon-Full-Rebuild.apk
+          name: Mazda6GH-AsBuilt-Studio-Run88-Red-Studio
+          path: out/Mazda6GH-AsBuilt-Studio-Run88-Red-Studio.apk
           if-no-files-found: error
